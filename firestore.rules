@@ -1,0 +1,56 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ১. ইউজার প্রোফাইল এবং আইডি কাউন্টার
+    match /users/{document} {
+      allow read, write: if true;
+    }
+    match /counters/{document} {
+      allow read, write: if true;
+    }
+    
+    // ২. মেম্বারশিপ সিস্টেম (লেভেল, টাস্ক এবং ভিডিওর তালিকা)
+    match /membershipLevels/{document} {
+      allow read, write: if true;
+    }
+    match /membershipTasks/{document} {
+      allow read, write: if true;
+    }
+    match /membershipVideos/{document} {
+      allow read, write: if true;
+    }
+    
+    // ৩. ইউজার প্রগ্রেস ট্র্যাকিং
+    match /userProgress/{document} {
+      allow read, write: if true;
+    }
+
+    // ৪. কন্টেন্ট সেকশন ভিডিও (ইসলাম কি?, দক্ষতা, লক্ষ্য ও উদ্দেশ্য)
+    match /whatIsIslamVideos/{document} {
+      allow read, write: if true;
+    }
+    match /skillsVideos/{document} {
+      allow read, write: if true;
+    }
+    match /goalsVideos/{document} {
+      allow read, write: if true;
+    }
+
+    // ৫. ওয়েবসাইট সেটিংস (লোগো ইত্যাদি)
+    match /settings/{document} {
+      allow read, write: if true;
+    }
+
+    // ৬. সাদকা রিকোয়েস্ট (নতুন যোগ করা হয়েছে)
+    match /sadakaRequests/{document} {
+      allow read, write: if true;
+    }
+    
+    // অন্য সব কিছুর জন্য ডিফল্ট সিকিউরিটি (সুরক্ষার জন্য বন্ধ রাখা হয়েছে)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

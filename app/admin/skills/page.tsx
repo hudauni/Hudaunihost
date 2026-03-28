@@ -1,0 +1,186 @@
+"use client";
+
+import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import {
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  doc,
+  query,
+  orderBy,
+  serverTimestamp
+} from 'firebase/firestore';
+import { Zap, Plus, Trash2, ExternalLink, Play } from 'lucide-react';
+
+interface SkillVideo {
+  id: string;
+  title: string;
+  youtubeUrl: string;
+  youtubeId: string;
+}
+
+export default function AdminSkills() {
+  const [videos, setVideos] = useState<SkillVideo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetchVideos();
+  }, []);
+
+  const fetchVideos = async () => {
+    try {
+      const q = query(collection(db, "skillsVideos"), orderBy("createdAt", "desc"));
+      const querySnapshot = await getDocs(q);
+      const data = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as SkillVideo[];
+      setVideos(data);
+    } catch (error) {
+      console.error("Error fetching videos:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getYoutubeId = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const videoId = getYoutubeId(url);
+
+    if (!videoId) {
+      alert("Invalid YouTube URL");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, "skillsVideos"), {
+        title,
+        youtubeUrl: url,
+        youtubeId: videoId,
+        createdAt: serverTimestamp()
+      });
+      setTitle("");
+      setUrl("");
+      fetchVideos();
+    } catch (error) {
+      console.error("Error adding video:", error);
+      alert("Failed to add video");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this video?")) return;
+    try {
+      await deleteDoc(doc(db, "skillsVideos", id));
+      fetchVideos();
+    } catch (error) {
+      console.error("Error deleting video:", error);
+    }
+  };
+
+  return (
+    <div className="space-y-8">
+      <div className="flex justify-between items-end">
+        <div>
+          <h2 className="text-2xl font-bold text-white mb-1 font-bengali">সাফল্যের জন্য দক্ষতা</h2>
+          <p className="text-white/40 text-sm">স্কিল ডেভেলপমেন্ট ভিডিও ম্যানেজ করুন</p>
+        </div>
+        <div className="bg-emerald-500/10 text-emerald-400 px-3 py-1.5 rounded-lg border border-emerald-500/20 text-xs font-medium">
+          {videos.length} Videos
+        </div>
+      </div>
+
+      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+          <Plus size={18} className="text-emerald-500" />
+          নতুন ভিডিও
+        </h3>
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <input
+            type="text"
+            placeholder="ভিডিওর শিরোনাম"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            required
+            className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-emerald-500/50 transition-all font-bengali"
+          />
+          <input
+            type="url"
+            placeholder="ইউটিউব লিংক"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            required
+            className="bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-emerald-500/50 transition-all"
+          />
+          <button
+            type="submit"
+            disabled={submitting}
+            className="bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-sm font-bold py-3 rounded-xl transition-all shadow-lg shadow-emerald-600/20"
+          >
+            {submitting ? "সেভ হচ্ছে..." : "ভিডিও যুক্ত করুন"}
+          </button>
+        </form>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {loading ? (
+          <div className="col-span-full py-10 text-center text-emerald-500 animate-pulse text-sm">লোড হচ্ছে...</div>
+        ) : videos.length === 0 ? (
+          <div className="col-span-full py-10 text-center text-white/20 border-2 border-dashed border-white/5 rounded-2xl text-sm">
+            কোনো ভিডিও নেই
+          </div>
+        ) : (
+          videos.map((video) => (
+            <div key={video.id} className="group bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden hover:border-emerald-500/30 transition-all">
+              <div className="aspect-video relative overflow-hidden bg-black">
+                <img
+                  src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                  alt={video.title}
+                  className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-8 h-8 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center text-white border border-white/20">
+                    <Play size={14} fill="currentColor" />
+                  </div>
+                </div>
+              </div>
+              <div className="p-3">
+                <h4 className="text-white font-bold text-xs mb-2 font-bengali truncate" title={video.title}>{video.title}</h4>
+                <div className="flex justify-end gap-1.5 border-t border-white/5 pt-2">
+                  <a
+                    href={video.youtubeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 bg-white/5 hover:bg-white/10 text-white/40 hover:text-white rounded-md transition-all"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                  <button
+                    onClick={() => handleDelete(video.id)}
+                    className="p-1.5 bg-red-500/10 hover:bg-red-500 text-red-500 hover:text-white rounded-md transition-all"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
