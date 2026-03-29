@@ -62,6 +62,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen w-full bg-[#001a1a] flex flex-col font-sans">
+
       <Navbar />
 
       <main className="relative flex-1 w-full flex flex-col items-center lg:pt-[73px]">
@@ -177,7 +178,7 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col w-[420px] h-[550px]">
-                <h3 className="text-white/40 text-xs font-bold uppercase tracking-[0.3em] mb-6 pl-4 border-l-2 border-emerald-500">Navigation</h3>
+                <h3 className="text-white/40 text-xs font-bold uppercase tracking-[0.3em] mb-6 pl-4 border-l-2 border-emerald-500 flex-shrink-0">Academic Navigation</h3>
                 <div className="flex flex-col space-y-4 overflow-y-auto pr-6 custom-scrollbar">
                   {menuItems.map((item) => (
                     <Link key={item.id} href={item.href} className="group relative w-full py-4 px-8 bg-white/[0.05] backdrop-blur-3xl rounded-full flex items-center justify-center transition-all duration-300 border border-white/10 shadow-2xl hover:bg-white/[0.08] hover:translate-x-2 flex-shrink-0">
@@ -185,14 +186,9 @@ export default function HomePage() {
                     </Link>
                   ))}
 
-                  {/* DESKTOP VIDEO SECTION (AFTER BUTTONS) */}
+                  {/* DESKTOP VIDEO SECTION */}
                   {promoVideos.length > 0 && (
                     <div className="pt-10 space-y-8">
-                      <div className="flex items-center gap-4">
-                        <div className="h-[1px] flex-1 bg-white/10"></div>
-                        <span className="text-white/30 text-[10px] font-black uppercase tracking-[0.3em]">Promo</span>
-                        <div className="h-[1px] flex-1 bg-white/10"></div>
-                      </div>
                       {promoVideos.map((video) => (
                         <div key={video.id} className="space-y-4">
                           <div
@@ -225,18 +221,28 @@ export default function HomePage() {
             <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300">
               <button
                 onClick={() => setSelectedVideoId(null)}
-                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-10"
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-[130]"
               >
                 <X size={24} />
               </button>
-              <iframe
-                src={`https://www.youtube.com/embed/${selectedVideoId}?autoplay=1`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full"
-              ></iframe>
+
+              <div className="relative w-full h-full">
+                <iframe
+                  src={`https://www.youtube.com/embed/${selectedVideoId}?autoplay=1&modestbranding=1&rel=0`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+
+                {/* HIGH PRIORITY OVERLAYS (Now Fully Transparent) */}
+                {/* Top Area: Title & Share */}
+                <div className="absolute top-0 left-0 right-0 h-[30%] z-[120] bg-transparent pointer-events-auto cursor-default"></div>
+
+                {/* Bottom Area: Controls & YouTube Logo */}
+                <div className="absolute bottom-0 left-0 right-0 h-[30%] z-[120] bg-transparent pointer-events-auto cursor-default"></div>
+              </div>
             </div>
           </div>
         )}

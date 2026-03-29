@@ -38,9 +38,6 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
               maxTimeWatchedRef.current = currentTime;
             }
             onProgress?.(currentTime);
-
-            // Removed the 90% auto-complete logic.
-            // Completion is now strictly 100% via the onStateChange ENDED event.
           }
         } catch (e) {}
       }
@@ -69,16 +66,22 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
         controls: 1,
         rel: 0,
         modestbranding: 1,
+        iv_load_policy: 3,
+        disablekb: 1,
         start: Math.floor(startSeconds),
         origin: typeof window !== 'undefined' ? window.location.origin : '',
         enablejsapi: 1,
       },
       events: {
-        onReady: () => {
+        onReady: (event: any) => {
+          // Force sandbox on the generated iframe
+          const iframe = event.target.getIframe();
+          if (iframe) {
+            iframe.setAttribute('sandbox', 'allow-forms allow-scripts allow-pointer-lock allow-same-origin');
+          }
           startTracking();
         },
         onStateChange: (event: any) => {
-          // Task completion is now strictly 100% (when the video ends)
           if (event.data === window.YT.PlayerState.ENDED) {
             onComplete?.();
           }
@@ -141,8 +144,11 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
         </div>
       )}
 
-      {/* Redirect Protection */}
-      <div className="absolute top-0 left-0 right-0 h-[45px] z-10 pointer-events-auto cursor-default"></div>
+      {/* Top Protective Overlay (Now Fully Transparent) */}
+      <div className="absolute top-0 left-0 right-0 h-[30%] z-[110] bg-transparent pointer-events-auto cursor-default"></div>
+
+      {/* Bottom Protective Overlay (Now Fully Transparent) */}
+      <div className="absolute bottom-0 left-0 right-0 h-[30%] z-[110] bg-transparent pointer-events-auto cursor-default"></div>
     </div>
   );
 }

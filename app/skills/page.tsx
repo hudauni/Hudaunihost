@@ -164,18 +164,26 @@ export default function SkillsPage() {
             <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300">
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-10"
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-[110]"
               >
                 <X size={24} />
               </button>
-              <iframe
-                src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1`}
-                title="YouTube video player"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full"
-              ></iframe>
+              <div className="relative w-full h-full">
+                <iframe
+                  src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&modestbranding=1&rel=0`}
+                  title="YouTube video player"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full"
+                ></iframe>
+
+                {/* Top Overlay */}
+                <div className="absolute top-0 left-0 right-0 h-[15%] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
+
+                {/* Bottom Overlay */}
+                <div className="absolute bottom-0 right-0 w-[20%] h-[15%] lg:w-[100px] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
+              </div>
             </div>
           </div>
         )}
