@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, User, Mail, Hash, Award, LogOut, Loader2, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, User, Mail, Hash, Award, LogOut, Loader2, CheckCircle2, History } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -142,7 +142,7 @@ export default function ProfilePage() {
                 <div className="p-1.5 bg-white/5 rounded-md text-emerald-400 shadow-inner"><Mail size={14} /></div>
                 <div className="min-w-0 flex-1">
                   <p className="text-white/60 text-[10px] uppercase font-bold tracking-widest">Email</p>
-                  <p className="text-white font-medium text-[12px] truncate">{user?.email}</p>
+                  <p className="text-white font-medium text-[9px] truncate">{user?.email}</p>
                 </div>
               </div>
 
@@ -175,6 +175,14 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
+
+              {/* Sadaka History Button */}
+              <Link href="/profile/sadaka-history" className="w-[245px]">
+                <button className="w-full py-3 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-500/30 rounded-lg font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:translate-y-1">
+                  <History size={18} />
+                  <span className="text-xs uppercase tracking-widest font-black font-bengali">সাদকা হিস্টোরি</span>
+                </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -249,7 +257,13 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="flex justify-end pt-4">
+              <div className="flex justify-between items-center pt-4">
+                <Link href="/profile/sadaka-history">
+                  <button className="px-8 py-4 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold transition-all flex items-center gap-3 shadow-xl">
+                    <History size={20} />
+                    <span className="font-bengali">সাদকা হিস্টোরি</span>
+                  </button>
+                </Link>
                 <Link href="/" className="text-emerald-400 hover:text-emerald-300 flex items-center gap-2 transition-all hover:-translate-x-1 drop-shadow-md">
                   <ChevronLeft size={20} />
                   <span className="font-bold font-bengali text-lg tracking-tight">হোমে ফিরে যান</span>

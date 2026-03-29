@@ -69,6 +69,15 @@ export default function AssociateSyllabusPage() {
     return progress[prevTaskId]?.completed === true;
   };
 
+  const handleTaskClick = (task: any) => {
+    // Check if it's the Sadaka task
+    if (task.title === "নিয়মিত সদকা করা") {
+      router.push('/sadaka');
+    } else {
+      router.push(`/membership/associate/${task.id}`);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-[#001a1a] flex items-center justify-center">
@@ -111,12 +120,11 @@ export default function AssociateSyllabusPage() {
                 <button
                   key={task.id}
                   disabled={!unlocked}
-                  onClick={() => router.push(`/membership/associate/${task.id}`)}
+                  onClick={() => handleTaskClick(task)}
                   className={`w-[285px] py-3 px-5 rounded-full border transition-all flex items-center justify-between group relative overflow-hidden
-                    ${unlocked
-                      ? 'bg-gradient-to-br from-[#1a472a]/70 to-[#001a1a]/90 backdrop-blur-xl border-t border-white/30 border-l border-white/20 shadow-[0_8px_15px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3)] active:scale-95 active:translate-y-1'
-                      : 'bg-black/40 backdrop-blur-md border-white/5 opacity-60'
-                    }`}
+                    bg-gradient-to-br from-[#1a472a]/70 to-[#001a1a]/90 backdrop-blur-xl border-t border-white/30 border-l border-white/20 shadow-[0_8px_15px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3)]
+                    ${unlocked ? 'active:scale-95 active:translate-y-1' : 'cursor-not-allowed'}
+                  `}
                 >
                   <span className={`text-[14px] font-bold font-bengali flex-1 text-center ml-6 tracking-wide drop-shadow-md ${unlocked ? 'text-white' : 'text-white/40'}`}>
                     {task.title}
@@ -162,12 +170,11 @@ export default function AssociateSyllabusPage() {
                   <button
                     key={task.id}
                     disabled={!unlocked}
-                    onClick={() => router.push(`/membership/associate/${task.id}`)}
+                    onClick={() => handleTaskClick(task)}
                     className={`p-5 rounded-2xl border transition-all flex items-center justify-between text-left group
-                      ${unlocked
-                        ? 'bg-gradient-to-br from-white/[0.08] to-transparent backdrop-blur-3xl border-t border-white/30 border-l border-white/20 hover:border-emerald-500/30 shadow-[0_15px_35px_rgba(0,0,0,0.4),inset_0_-2px_6px_rgba(0,0,0,0.2)] hover:-translate-y-1'
-                        : 'bg-black/20 border-white/5 opacity-40 grayscale cursor-not-allowed'
-                      }`}
+                      bg-gradient-to-br from-white/[0.08] to-transparent backdrop-blur-3xl border-t border-white/30 border-l border-white/20 shadow-[0_15px_35px_rgba(0,0,0,0.4),inset_0_-2px_6px_rgba(0,0,0,0.2)]
+                      ${unlocked ? 'hover:border-emerald-500/30 hover:-translate-y-1' : 'cursor-not-allowed'}
+                    `}
                   >
                     <h3 className={`font-bold font-bengali text-xl drop-shadow-lg ${unlocked ? 'text-white' : 'text-white/40'}`}>
                       {task.title}

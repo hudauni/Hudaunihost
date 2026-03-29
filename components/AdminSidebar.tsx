@@ -14,12 +14,14 @@ import {
   Zap,
   Flag,
   Inbox,
+  Home,
   ChevronDown,
   CircleDot
 } from 'lucide-react';
 
 const menuItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Home Page', href: '/admin/home', icon: Home },
   {
     name: 'Inbox',
     href: '#',

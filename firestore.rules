@@ -43,8 +43,18 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // ৬. সাদকা রিকোয়েস্ট (নতুন যোগ করা হয়েছে)
+    // ৬. সাদকা রিকোয়েস্ট
     match /sadakaRequests/{document} {
+      allow read, write: if true;
+    }
+
+    // ৭. হোম পেজ মেনু বাটন
+    match /homeMenu/{document} {
+      allow read, write: if true;
+    }
+
+    // ৮. হোম পেজ প্রোমো ভিডিও
+    match /homeVideos/{document} {
       allow read, write: if true;
     }
     

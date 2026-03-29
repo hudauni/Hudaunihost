@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Search, X, ArrowRight, MoreVertical, Play, Pause, User, CheckCircle2, AlertCircle } from 'lucide-react';
+import { ChevronLeft, Search, X, ArrowRight, MoreVertical, Play, Pause, User, CheckCircle2, AlertCircle, ChevronsDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 
 interface Ayah {
@@ -62,8 +62,13 @@ export default function SurahDetailPage() {
   const [ayahInput, setAyahInput] = useState("");
   const [highlightedAyah, setHighlightedAyah] = useState<string | null>(null);
 
+  // Auto-Scroll States
+  const [isAutoScrolling, setIsAutoScrolling] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(1);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const observer = useRef<IntersectionObserver | null>(null);
+  const scrollAccumulatorRef = useRef<number>(0);
 
   const toBengaliNumber = (num: number) => {
     const digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
@@ -108,11 +113,16 @@ export default function SurahDetailPage() {
     return {
       number: arabicData.number,
       name: arabicData.name,
-      englishName: arabicData.englishName,
+      englishName: arabicNameTranslation(id),
       ayahs: combinedAyahs,
       bismillah: surahBismillah
     };
   };
+
+  const arabicNameTranslation = (id: string | number) => {
+    const surah = BENGALI_SURAH_NAMES[Number(id)];
+    return surah || "";
+  }
 
   const scrollToAyah = useCallback((sId: string | number, aId: string | number) => {
     const elementId = window.innerWidth >= 1024 ? `ayah-desktop-${sId}-${aId}` : `ayah-${sId}-${aId}`;
@@ -154,9 +164,12 @@ export default function SurahDetailPage() {
     audio.onended = () => {
       setPlayingAyahKey(null);
       setSurahs(prev => {
-        const surahObj = prev.find(s => s.number === surahNum);
-        if (surahObj && ayah.number < surahObj.ayahs.length) {
-          playAyahAudio(surahObj.ayahs[ayah.number], surahNum);
+        const surahIndex = prev.findIndex(s => s.number === surahNum);
+        if (surahIndex !== -1) {
+          const surahObj = prev[surahIndex];
+          if (ayah.number < surahObj.ayahs.length) {
+            playAyahAudio(surahObj.ayahs[ayah.number], surahNum);
+          }
         }
         return prev;
       });
@@ -196,6 +209,35 @@ export default function SurahDetailPage() {
     }, { rootMargin: '800px' });
     if (node) observer.current.observe(node);
   }, [loading, nextSurahId, isFetchingNext, loadNextSurah]);
+
+  // Handle Auto-Scrolling Effect
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const scroll = () => {
+      if (isAutoScrolling) {
+        // Accumulate sub-pixel movement
+        // Multiplier adjusted for 3x max speed and extreme smoothness
+        scrollAccumulatorRef.current += (scrollSpeed * 0.15);
+
+        if (scrollAccumulatorRef.current >= 1 || scrollAccumulatorRef.current <= -1) {
+          const pixelsToScroll = Math.floor(scrollAccumulatorRef.current);
+          window.scrollBy(0, pixelsToScroll);
+          scrollAccumulatorRef.current -= pixelsToScroll;
+        }
+
+        animationFrameId = requestAnimationFrame(scroll);
+      }
+    };
+
+    if (isAutoScrolling) {
+      animationFrameId = requestAnimationFrame(scroll);
+    }
+
+    return () => {
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+    };
+  }, [isAutoScrolling, scrollSpeed]);
 
   useEffect(() => {
     let isMounted = true;
@@ -237,6 +279,13 @@ export default function SurahDetailPage() {
             {isDownloaded ? <div className="flex items-center space-x-1 text-[8px] text-emerald-500 font-bold uppercase tracking-tighter"><CheckCircle2 size={8}/><span>Downloaded</span></div> : <div className="flex items-center space-x-1 text-[8px] text-white/20 font-bold uppercase tracking-tighter"><AlertCircle size={8}/><span>Not Downloaded</span></div>}
           </div>
           <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsAutoScrolling(!isAutoScrolling)}
+              className={`p-2 rounded-full transition-all ${isAutoScrolling ? 'bg-emerald-500 text-white animate-pulse' : 'bg-white/5 text-white hover:bg-white/10'}`}
+              title="Auto Scroll"
+            >
+              <ChevronsDown size={20} />
+            </button>
             <button onClick={() => setIsSearchOpen(!isSearchOpen)} className={`p-2 rounded-full transition-all ${isSearchOpen ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white hover:bg-white/10'}`}><Search size={20} /></button>
             <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors"><MoreVertical size={20} /></button>
           </div>
@@ -278,6 +327,27 @@ export default function SurahDetailPage() {
         </div>
       )}
 
+      {/* --- AUTO-SCROLL SPEED CONTROL - SLIM VERSION --- */}
+      {isAutoScrolling && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] w-64 bg-black/60 backdrop-blur-2xl px-5 py-3 rounded-2xl border border-white/10 shadow-2xl animate-in slide-in-from-bottom-4 duration-500">
+          <div className="flex flex-col space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-[8px] text-white/40 uppercase font-black tracking-[0.2em]">Scroll Speed</span>
+              <span className="text-emerald-400 font-bold text-[10px]">{scrollSpeed}x</span>
+            </div>
+            <input
+              type="range"
+              min="0.1"
+              max="3"
+              step="0.1"
+              value={scrollSpeed}
+              onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
+              className="w-full h-1 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            />
+          </div>
+        </div>
+      )}
+
       <main className="flex-1 w-full flex flex-col items-center pt-[65px] lg:pt-[138px]">
         {/* --- MOBILE VERSION --- */}
         <div className="lg:hidden w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-[#002b2b] via-[#001a1a] to-[#000d0d] pb-10">
@@ -300,8 +370,8 @@ export default function SurahDetailPage() {
                             <span className="text-emerald-500/60 font-bold text-[10px] bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">আয়াত {toBengaliNumber(ayah.number)}</span>
                             <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button>
                           </div>
-                          <p className="text-white text-4xl text-right leading-loose font-serif dir-rtl pr-2">{ayah.text}</p>
-                          <p className="text-emerald-100/70 text-[20px] font-bengali leading-relaxed border-t border-white/5 pt-4">{ayah.translation}</p>
+                          <p className="text-white text-[26px] text-right leading-[1.5] font-serif dir-rtl pr-2">{ayah.text}</p>
+                          <p className="text-emerald-100/70 text-[18px] font-bengali leading-relaxed border-t border-white/5 pt-4">{ayah.translation}</p>
                         </div>
                       );
                     })}
@@ -333,8 +403,8 @@ export default function SurahDetailPage() {
                               <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 font-bold">{ayah.number}</div>
                               <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-3 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={20} fill="currentColor"/> : <Play size={20} fill="currentColor"/>}</button>
                             </div>
-                            <p className="text-white text-4xl text-right leading-[1.8] font-serif">{ayah.text}</p>
-                            <p className="text-emerald-100/70 text-xl font-bengali leading-relaxed border-t border-white/10 pt-6">{ayah.translation}</p>
+                            <p className="text-white text-[26px] text-right leading-[1.5] font-serif">{ayah.text}</p>
+                            <p className="text-emerald-100/70 text-[18px] font-bengali leading-relaxed border-t border-white/10 pt-6">{ayah.translation}</p>
                           </div>
                         );
                       })}

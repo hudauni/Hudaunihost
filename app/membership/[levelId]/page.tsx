@@ -79,6 +79,14 @@ export default function LevelSyllabusPage() {
     return progress[prevTaskId]?.completed === true;
   };
 
+  const handleTaskClick = (task: any) => {
+    if (levelId === 'associate' && task.title === "নিয়মিত সদকা করা") {
+      router.push('/sadaka');
+    } else {
+      router.push(`/membership/${levelId}/${task.id}`);
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-[#001a1a] flex items-center justify-center">
@@ -121,7 +129,7 @@ export default function LevelSyllabusPage() {
                 <button
                   key={task.id}
                   disabled={!unlocked}
-                  onClick={() => router.push(`/membership/${levelId}/${task.id}`)}
+                  onClick={() => handleTaskClick(task)}
                   className={`w-[285px] py-3 px-5 rounded-full border transition-all flex items-center justify-between group relative overflow-hidden
                     bg-gradient-to-br from-[#1a472a]/70 to-[#001a1a]/90 backdrop-blur-xl border-t border-white/30 border-l border-white/20 shadow-[0_8px_15px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3)]
                     ${unlocked ? 'active:scale-95 active:translate-y-1' : 'cursor-not-allowed'}
@@ -171,7 +179,7 @@ export default function LevelSyllabusPage() {
                   <button
                     key={task.id}
                     disabled={!unlocked}
-                    onClick={() => router.push(`/membership/${levelId}/${task.id}`)}
+                    onClick={() => handleTaskClick(task)}
                     className={`p-5 rounded-2xl border transition-all flex items-center justify-between text-left group
                       bg-gradient-to-br from-white/[0.08] to-transparent backdrop-blur-3xl border-t border-white/30 border-l border-white/20 shadow-[0_15px_35px_rgba(0,0,0,0.4),inset_0_-2px_6px_rgba(0,0,0,0.2)]
                       ${unlocked ? 'hover:border-emerald-500/30 hover:-translate-y-1' : 'cursor-not-allowed'}

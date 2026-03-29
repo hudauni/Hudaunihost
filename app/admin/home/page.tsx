@@ -1,0 +1,224 @@
+"use client";
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { db } from '@/lib/firebase';
+import {
+  collection, addDoc, getDocs, deleteDoc, doc,
+  query, orderBy, updateDoc, writeBatch, serverTimestamp
+} from 'firebase/firestore';
+import { Plus, Trash2, Edit2, Save, Loader2, RefreshCw, Video, List } from 'lucide-react';
+
+export default function AdminHomeManagement() {
+  const [activeTab, setActiveTab] = useState<'buttons' | 'videos'>('buttons');
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [homeVideos, setHomeVideos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Button Form
+  const [newTitle, setNewTitle] = useState("");
+  const [newHref, setNewHref] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editHref, setEditHref] = useState("");
+
+  // Video Form
+  const [newVTitle, setNewVTitle] = useState("");
+  const [newVUrl, setNewVUrl] = useState("");
+
+  const fetchMenu = useCallback(async () => {
+    try {
+      const q = query(collection(db, "homeMenu"), orderBy("order", "asc"));
+      const snap = await getDocs(q);
+      setMenuItems(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error(e); }
+  }, []);
+
+  const fetchVideos = useCallback(async () => {
+    try {
+      const q = query(collection(db, "homeVideos"), orderBy("createdAt", "desc"));
+      const snap = await getDocs(q);
+      setHomeVideos(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch (e) { console.error(e); }
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([fetchMenu(), fetchVideos()]).then(() => setLoading(false));
+  }, [fetchMenu, fetchVideos]);
+
+  const setupInitialMenu = async () => {
+    setSubmitting(true);
+    const batch = writeBatch(db);
+    const defaults = [
+      { title: "আল কুরআন", href: "/quran" },
+      { title: "মেম্বার হতে চাই", href: "/membership" },
+      { title: "ইসলাম কি? কেন? কিভাবে?", href: "/what-is-islam" },
+      { title: "সাফল্যের জন্য দক্ষতা", href: "/skills" },
+      { title: "সকল সেবা", href: "/services" },
+      { title: "কাউন্সিলিং প্রয়োজন", href: "/counseling" },
+      { title: "হুদা ইউনি এর লক্ষ্য-উদ্দেশ্য", href: "/goals" },
+      { title: "সাদকা প্রদান", href: "/sadaka" },
+    ];
+    defaults.forEach((item, i) => {
+      const ref = doc(collection(db, "homeMenu"));
+      batch.set(ref, { ...item, order: i + 1 });
+    });
+    try {
+      await batch.commit();
+      fetchMenu();
+    } catch (e) { console.error(e); }
+    finally { setSubmitting(false); }
+  };
+
+  const handleAddButton = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, "homeMenu"), { title: newTitle, href: newHref, order: menuItems.length + 1 });
+      setNewTitle(""); setNewHref("");
+      fetchMenu();
+    } catch (e) { console.error(e); }
+    finally { setSubmitting(false); }
+  };
+
+  const handleAddVideo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = newVUrl.match(regExp);
+    const videoId = (match && match[2].length === 11) ? match[2] : null;
+    if (!videoId) return alert("Invalid YouTube URL");
+
+    setSubmitting(true);
+    try {
+      await addDoc(collection(db, "homeVideos"), {
+        title: newVTitle,
+        youtubeId: videoId,
+        createdAt: serverTimestamp()
+      });
+      setNewVTitle(""); setNewVUrl("");
+      fetchVideos();
+    } catch (error) { console.error(error); }
+    finally { setSubmitting(false); }
+  };
+
+  const handleUpdate = async (id: string) => {
+    await updateDoc(doc(db, "homeMenu", id), {
+      title: editTitle,
+      href: editHref
+    });
+    setEditingId(null);
+    fetchMenu();
+  };
+
+  const handleDelete = async (col: string, id: string) => {
+    if (!confirm("আইটেমটি ডিলিট করতে চান?")) return;
+    await deleteDoc(doc(db, col, id));
+    if (col === "homeMenu") fetchMenu();
+    else fetchVideos();
+  };
+
+  if (loading) return <div className="p-10 text-emerald-500 animate-pulse font-bold">লোড হচ্ছে...</div>;
+
+  return (
+    <div className="space-y-10 pb-20">
+      <div className="flex justify-between items-center">
+        <div>
+          <h2 className="text-3xl font-bold text-white font-bengali">হোম পেজ ম্যানেজমেন্ট</h2>
+          <p className="text-white/40 text-sm">ড্যাশবোর্ডের মেনু এবং প্রোমো ভিডিও নিয়ন্ত্রণ করুন</p>
+        </div>
+        <div className="flex bg-white/5 p-1 rounded-sm border border-white/10">
+          <button
+            onClick={() => setActiveTab('buttons')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-bold transition-all ${activeTab === 'buttons' ? 'bg-emerald-500 text-white' : 'text-white/40 hover:text-white'}`}
+          >
+            <List size={16} /> Buttons
+          </button>
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`flex items-center gap-2 px-4 py-2 rounded-sm text-xs font-bold transition-all ${activeTab === 'videos' ? 'bg-emerald-500 text-white' : 'text-white/40 hover:text-white'}`}
+          >
+            <Video size={16} /> Promo Videos
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'buttons' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-1">
+            <div className="bg-white/[0.03] border border-white/10 p-6 rounded-sm sticky top-24">
+              <h3 className="text-white font-bold mb-6 flex items-center gap-2">
+                <Plus size={18} className="text-emerald-500" />
+                নতুন মেনু বাটন
+              </h3>
+              <form onSubmit={handleAddButton} className="space-y-4">
+                <input type="text" placeholder="বাটনের নাম" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali" />
+                <input type="text" placeholder="লিংক (যেমন: /quran)" value={newHref} onChange={(e) => setNewHref(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50" />
+                <button disabled={submitting} className="w-full bg-emerald-600 py-3.5 rounded-sm font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-50">
+                  {submitting ? "সেভ হচ্ছে..." : "বাটন যোগ করুন"}
+                </button>
+              </form>
+              {menuItems.length === 0 && (
+                <button onClick={setupInitialMenu} className="w-full mt-4 flex items-center justify-center gap-2 py-2 text-emerald-400/40 hover:text-emerald-400 text-[10px] font-bold uppercase transition-all border border-emerald-500/10 rounded-sm"><RefreshCw size={12}/> Setup Initial Menu</button>
+              )}
+            </div>
+          </div>
+          <div className="lg:col-span-2 space-y-2">
+            {menuItems.map((item, index) => (
+              <div key={item.id} className="bg-white/[0.02] border border-white/5 p-4 flex items-center justify-between rounded-sm group hover:border-emerald-500/30 transition-all">
+                {editingId === item.id ? (
+                  <div className="flex-1 grid grid-cols-2 gap-2 mr-4">
+                    <input className="bg-black/60 border border-emerald-500 rounded-sm px-3 py-1 text-white text-sm font-bengali" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                    <input className="bg-black/60 border border-emerald-500 rounded-sm px-3 py-1 text-white text-sm" value={editHref} onChange={(e) => setEditHref(e.target.value)} />
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="text-white/20 font-black italic">{index + 1}</div>
+                    <h4 className="text-white font-bold font-bengali">{item.title}</h4>
+                  </div>
+                )}
+                <div className="flex gap-1">
+                  {editingId === item.id ? (
+                    <button onClick={() => handleUpdate(item.id)} className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-sm"><Save size={18}/></button>
+                  ) : (
+                    <button onClick={() => { setEditingId(item.id); setEditTitle(item.title); setEditHref(item.href); }} className="p-2 text-white/20 hover:text-white rounded-sm"><Edit2 size={16}/></button>
+                  )}
+                  <button onClick={() => handleDelete("homeMenu", item.id)} className="p-2 text-red-500/20 hover:text-red-500 rounded-sm"><Trash2 size={16}/></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-1">
+            <div className="bg-white/[0.03] border border-white/10 p-6 rounded-sm sticky top-24">
+              <h3 className="text-white font-bold mb-6 flex items-center gap-2">
+                <Plus size={18} className="text-emerald-500" />
+                নতুন প্রোমো ভিডিও
+              </h3>
+              <form onSubmit={handleAddVideo} className="space-y-4">
+                <input type="text" placeholder="ভিডিও শিরোনাম" value={newVTitle} onChange={(e) => setNewVTitle(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali" />
+                <input type="url" placeholder="ইউটিউব লিংক" value={newVUrl} onChange={(e) => setNewVUrl(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50" />
+                <button disabled={submitting} className="w-full bg-emerald-600 py-3.5 rounded-sm font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-50">
+                  {submitting ? "সেভ হচ্ছে..." : "ভিডিও যোগ করুন"}
+                </button>
+              </form>
+            </div>
+          </div>
+          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {homeVideos.map((video) => (
+              <div key={video.id} className="bg-white/[0.02] border border-white/5 p-4 rounded-sm space-y-3 relative group">
+                <img src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`} className="w-full aspect-video object-cover rounded-sm opacity-60 group-hover:opacity-100 transition-opacity" alt=""/>
+                <div className="flex justify-between items-center">
+                  <h4 className="text-white font-bold text-xs font-bengali truncate flex-1 mr-4">{video.title}</h4>
+                  <button onClick={() => handleDelete("homeVideos", video.id)} className="text-red-500/40 hover:text-red-500"><Trash2 size={16}/></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

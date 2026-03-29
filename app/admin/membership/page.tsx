@@ -4,9 +4,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import {
   collection, addDoc, getDocs, deleteDoc, doc,
-  query, where, serverTimestamp, updateDoc, setDoc, writeBatch
+  query, where, serverTimestamp, updateDoc, setDoc
 } from 'firebase/firestore';
-import { Plus, Trash2, Edit2, X, Settings2, RotateCcw } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Settings2 } from 'lucide-react';
 
 export default function AdminMembership() {
   const [levels, setLevels] = useState<any[]>([]);
@@ -73,28 +73,6 @@ export default function AdminMembership() {
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
   useEffect(() => { fetchVideos(); }, [fetchVideos]);
 
-  const seedData = async () => {
-    if (!confirm("আপনি কি ডিফল্ট ১০টি লেভেল এবং এসোসিয়েট সিলেবাস টাস্কগুলো ডাটাবেসে যোগ করতে চান?")) return;
-
-    const batch = writeBatch(db);
-
-    const defaultLevels = ["Associate", "Member", "Scholar", "Graduate", "Ambassador", "Instructor", "Advisor", "Mentor", "Master", "Principal"];
-    defaultLevels.forEach((title, i) => {
-      const id = title.toLowerCase().replace(/\s+/g, '-');
-      batch.set(doc(db, "membershipLevels", id), { title, order: i + 1 });
-    });
-
-    const defaultTasks = ["পবিত্র কুরআন তিলাওয়াত শুনে শেষ করা", "কুরআনের বাংলা অনুবাদ শুনে শেষ করা", "ইসলামের অলৌকিক নিদর্শনের ক্লাস দেখা", "নিদর্শন ভিত্তিক বইয়ের অডিও শোনা", "ইসলামের গ্রহণের গল্প দেখা", "রাসূল (সাঃ) এর জীবনী", "প্রতিদিন স্মরণিকা অডিও ট্র্যাক শোনা", "নিয়মিত সদকা করা", "প্রতি শুক্রবার স্মরণিকা অনলাইন লাইভ ক্লাস", "লাইভ ক্লাসে নিজের পরিজনদের আমন্ত্রণ"];
-    defaultTasks.forEach((title, i) => {
-      const ref = doc(collection(db, "membershipTasks"));
-      batch.set(ref, { title, levelId: "associate", order: i + 1, createdAt: serverTimestamp() });
-    });
-
-    await batch.commit();
-    alert("সাফল্যের সাথে ডিফল্ট ডাটা যোগ করা হয়েছে!");
-    fetchLevels();
-  };
-
   const addLevel = async () => {
     const title = prompt("লেভেলের নাম:");
     if (!title) return;
@@ -104,7 +82,7 @@ export default function AdminMembership() {
   };
 
   const addTask = async () => {
-    const title = prompt("টাস্কের নাম:");
+    const title = prompt("টাস্কের নাম লিখুন:");
     if (!title) return;
     await addDoc(collection(db, "membershipTasks"), { title, levelId: selectedLevelId, order: tasks.length + 1, createdAt: serverTimestamp() });
     fetchTasks();
@@ -135,7 +113,6 @@ export default function AdminMembership() {
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-white font-bengali">মেম্বারশিপ ম্যানেজমেন্ট</h2>
         <div className="flex gap-2">
-          <button onClick={seedData} className="flex items-center gap-2 px-4 py-2 bg-emerald-600/20 text-emerald-400 rounded-sm text-xs font-bold border border-emerald-500/20 hover:bg-emerald-600/30 transition-all"><RotateCcw size={16} /> Restore Defaults</button>
           <button onClick={() => setIsLevelModalOpen(!isLevelModalOpen)} className="p-2 bg-white/5 hover:bg-white/10 text-white rounded-sm border border-white/10"><Settings2 size={20} /></button>
         </div>
       </div>
