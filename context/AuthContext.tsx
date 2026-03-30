@@ -34,23 +34,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
-        const data = await syncUserData(firebaseUser);
-        setUserData(data);
-      } else {
-        setUser(null);
-        setUserData(null);
-        // Mandatory login redirect
-        if (pathname && !pathname.startsWith('/login')) {
-          router.push('/login');
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
+          const data = await syncUserData(firebaseUser);
+          setUserData(data);
+        } else {
+          setUser(null);
+          setUserData(null);
+          if (pathname && !pathname.startsWith('/login') && !pathname.startsWith('/admin')) {
+             router.push('/login');
+          }
         }
+      } catch (error) {
+        console.error("Auth sync error:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [pathname, router]);
+  }, []); // Only run once on mount
+
+  // Separate effect for redirection to avoid re-subscribing to auth
+  useEffect(() => {
+    if (!loading && !user && pathname && !pathname.startsWith('/login')) {
+      router.push('/login');
+    }
+  }, [user, loading, pathname, router]);
 
   const syncUserData = async (firebaseUser: User) => {
     const userRef = doc(db, "users", firebaseUser.uid);

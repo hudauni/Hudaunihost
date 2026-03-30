@@ -13,6 +13,9 @@ const hindSiliguri = Hind_Siliguri({
 export const metadata: Metadata = {
   title: "Huda Uni - Islamic University Platform",
   description: "A professional platform for Islamic education and services",
+  icons: {
+    icon: "/images/favicon.ico",
+  },
 };
 
 export default function RootLayout({
@@ -23,7 +26,7 @@ export default function RootLayout({
   return (
     <html lang="bn" suppressHydrationWarning>
       <body
-        className={`${inter.className} ${hindSiliguri.variable} font-sans`}
+        className={`${inter.className} ${hindSiliguri.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
         <AuthProvider>
