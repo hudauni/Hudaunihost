@@ -74,11 +74,6 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
       },
       events: {
         onReady: (event: any) => {
-          // Force sandbox on the generated iframe
-          const iframe = event.target.getIframe();
-          if (iframe) {
-            iframe.setAttribute('sandbox', 'allow-forms allow-scripts allow-pointer-lock allow-same-origin');
-          }
           startTracking();
         },
         onStateChange: (event: any) => {
@@ -144,11 +139,9 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
         </div>
       )}
 
-      {/* Top Protective Overlay (Now Fully Transparent) */}
-      <div className="absolute top-0 left-0 right-0 h-[30%] z-[110] bg-transparent pointer-events-auto cursor-default"></div>
-
-      {/* Bottom Protective Overlay (Now Fully Transparent) */}
-      <div className="absolute bottom-0 left-0 right-0 h-[30%] z-[110] bg-transparent pointer-events-auto cursor-default"></div>
+      {/* Standard 60px Overlays for protection */}
+      <div className="absolute top-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
     </div>
   );
 }

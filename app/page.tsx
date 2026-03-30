@@ -221,7 +221,7 @@ export default function HomePage() {
             <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300">
               <button
                 onClick={() => setSelectedVideoId(null)}
-                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-[130]"
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-[120]"
               >
                 <X size={24} />
               </button>
@@ -236,12 +236,9 @@ export default function HomePage() {
                   className="w-full h-full"
                 ></iframe>
 
-                {/* HIGH PRIORITY OVERLAYS (Now Fully Transparent) */}
-                {/* Top Area: Title & Share */}
-                <div className="absolute top-0 left-0 right-0 h-[30%] z-[120] bg-transparent pointer-events-auto cursor-default"></div>
-
-                {/* Bottom Area: Controls & YouTube Logo */}
-                <div className="absolute bottom-0 left-0 right-0 h-[30%] z-[120] bg-transparent pointer-events-auto cursor-default"></div>
+                {/* Fixed 60px Overlays to ensure play button is accessible */}
+                <div className="absolute top-0 left-0 right-0 h-[60px] z-[110] bg-transparent pointer-events-auto cursor-default"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-[60px] z-[110] bg-transparent pointer-events-auto cursor-default"></div>
               </div>
             </div>
           </div>
