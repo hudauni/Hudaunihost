@@ -121,7 +121,7 @@ export default function HomePage() {
             <User size={20} className="text-[#1a472a] stroke-[3]" />
           </Link>
 
-          <div className="w-full max-w-[320px] flex flex-col items-center z-10">
+          <div className="w-full max-w-[360px] flex flex-col items-center z-10 px-4">
             <div className="flex flex-col items-center pt-[106px] text-center space-y-1">
               {logoUrl ? (
                 <div className="relative h-16 w-40 mb-2">
@@ -149,14 +149,14 @@ export default function HomePage() {
                   <Link
                     key={item.id}
                     href={item.href}
-                    className="relative w-full max-w-[280px] py-3 px-6 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-between border border-white/10 shadow-lg active:scale-95 transition-all flex-shrink-0"
+                    className="relative w-full max-w-[320px] py-3 px-6 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-between border border-white/10 shadow-lg active:scale-95 transition-all flex-shrink-0"
                   >
                     <span className="text-white text-[14px] font-bold tracking-wide flex-1 text-center font-bengali">{item.title}</span>
                   </Link>
                 ))}
 
                 {!isDesktop && promoVideos.map((video) => (
-                  <div key={video.id} className="w-full max-w-[280px] flex-shrink-0 space-y-4 pt-8">
+                  <div key={video.id} className="w-full flex-shrink-0 space-y-4 pt-8">
                     <div className="flex items-center gap-2 w-full px-4 mb-2">
                       <div className="h-[1px] flex-1 bg-white/10"></div>
                       <span className="text-white/30 text-[8px] font-black uppercase tracking-[0.2em]">Highlight</span>
@@ -165,14 +165,21 @@ export default function HomePage() {
 
                     <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black">
                       {playingVideoId === video.youtubeId ? (
-                        <iframe
-                          src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
-                          title={video.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          allowFullScreen
-                          className="w-full h-full"
-                        ></iframe>
+                        <div className="relative w-full h-full">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
+                            title={video.title}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            className="w-full h-full"
+                          ></iframe>
+
+                          {/* --- RESPONSIVE OVERLAYS --- */}
+                          <div className="absolute top-0 left-0 right-0 h-[18%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute bottom-0 left-0 right-0 h-[18%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                        </div>
                       ) : (
                         <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
                           <img
@@ -245,14 +252,21 @@ export default function HomePage() {
                   <div key={video.id} className="space-y-4 pt-10">
                     <div className="relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-xl bg-black">
                       {playingVideoId === video.youtubeId ? (
-                        <iframe
-                          src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
-                          title={video.title}
-                          frameBorder="0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                          allowFullScreen
-                          className="w-full h-full"
-                        ></iframe>
+                        <div className="relative w-full h-full">
+                          <iframe
+                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
+                            title={video.title}
+                            frameBorder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                            allowFullScreen
+                            className="w-full h-full"
+                          ></iframe>
+
+                          {/* --- DESKTOP OVERLAYS --- */}
+                          <div className="absolute top-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute top-0 bottom-0 right-0 w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                        </div>
                       ) : (
                         <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
                           <img

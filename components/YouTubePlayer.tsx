@@ -57,20 +57,19 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
     const playerDiv = document.createElement('div');
     containerRef.current.appendChild(playerDiv);
 
-    // Using window.location.origin but removing trailing slash if exists
     const origin = typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : '';
 
     playerRef.current = new window.YT.Player(playerDiv, {
       videoId: videoId.trim(),
       width: '100%',
       height: '100%',
-      host: 'https://www.youtube-nocookie.com', // Use privacy-enhanced mode for better compatibility
+      host: 'https://www.youtube-nocookie.com',
       playerVars: {
         autoplay: 0,
         controls: 1,
         rel: 0,
         modestbranding: 1,
-        playsinline: 1, // Crucial for iOS
+        playsinline: 1,
         iv_load_policy: 3,
         start: Math.floor(startSeconds),
         origin: origin,
@@ -90,7 +89,7 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
           if (e.data === 150 || e.data === 101) {
             setError("এই ভিডিওটি ইউটিউব থেকে সরাসরি দেখার অনুমতি নেই।");
           } else {
-            setError("ভিডিও লোড হতে সমস্যা হচ্ছে। অনুগ্রহ করে আপনার ব্রাউজার সেটিংস বা ইন্টারনেট কানেকশন চেক করুন।");
+            setError("ভিডিও লোড হতে সমস্যা হচ্ছে।");
           }
         }
       }
@@ -143,9 +142,15 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
         </div>
       )}
 
-      {/* Standard 60px Overlays for protection */}
-      <div className="absolute top-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-      <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+      {/* --- RESPONSIVE OVERLAYS --- */}
+      {/* Top Overlay: 60px on Desktop, ~18% on Mobile */}
+      <div className="absolute top-0 left-0 right-0 h-[18%] lg:h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+
+      {/* Bottom Overlay: 60px on Desktop, ~18% on Mobile */}
+      <div className="absolute bottom-0 left-0 right-0 h-[18%] lg:h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+
+      {/* Right Overlay: 120px on Desktop, ~30% on Mobile */}
+      <div className="absolute top-0 bottom-0 right-0 w-[30%] lg:w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
     </div>
   );
 }
