@@ -57,19 +57,23 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
     const playerDiv = document.createElement('div');
     containerRef.current.appendChild(playerDiv);
 
+    // Using window.location.origin but removing trailing slash if exists
+    const origin = typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : '';
+
     playerRef.current = new window.YT.Player(playerDiv, {
-      videoId: videoId,
+      videoId: videoId.trim(),
       width: '100%',
       height: '100%',
+      host: 'https://www.youtube-nocookie.com', // Use privacy-enhanced mode for better compatibility
       playerVars: {
-        autoplay: 1,
+        autoplay: 0,
         controls: 1,
         rel: 0,
         modestbranding: 1,
+        playsinline: 1, // Crucial for iOS
         iv_load_policy: 3,
-        disablekb: 1,
         start: Math.floor(startSeconds),
-        origin: typeof window !== 'undefined' ? window.location.origin : '',
+        origin: origin,
         enablejsapi: 1,
       },
       events: {
@@ -86,7 +90,7 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
           if (e.data === 150 || e.data === 101) {
             setError("এই ভিডিওটি ইউটিউব থেকে সরাসরি দেখার অনুমতি নেই।");
           } else {
-            setError("ভিডিও লোড হতে সমস্যা হচ্ছে।");
+            setError("ভিডিও লোড হতে সমস্যা হচ্ছে। অনুগ্রহ করে আপনার ব্রাউজার সেটিংস বা ইন্টারনেট কানেকশন চেক করুন।");
           }
         }
       }
