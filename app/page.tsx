@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { Play, Loader2, User, Zap } from 'lucide-react';
@@ -28,6 +28,11 @@ export default function HomePage() {
   const [isDesktop, setIsDesktop] = useState(false);
   const router = useRouter();
 
+  // Refs for Autoplay Logic
+  const mobileScrollRef = useRef<HTMLDivElement>(null);
+  const desktopScrollRef = useRef<HTMLDivElement>(null);
+  const videoElementsRef = useRef<{[key: string]: HTMLDivElement | null}>({});
+
   useEffect(() => {
     const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
     handleResize();
@@ -40,6 +45,37 @@ export default function HomePage() {
       router.push('/login');
     }
   }, [user, authLoading, router]);
+
+  // Facebook-style Autoplay on Scroll Logic
+  useEffect(() => {
+    if (promoVideos.length === 0) return;
+
+    const observerOptions = {
+      root: isDesktop ? desktopScrollRef.current : mobileScrollRef.current,
+      rootMargin: '0px',
+      threshold: 0.6 // Video must be 60% visible to play
+    };
+
+    const observerCallback = (entries: IntersectionObserverEntry[]) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const videoId = entry.target.getAttribute('data-video-id');
+          if (videoId) {
+            setPlayingVideoId(videoId);
+          }
+        }
+      });
+    };
+
+    const observer = new IntersectionObserver(observerCallback, observerOptions);
+
+    // Observe all video card elements
+    Object.values(videoElementsRef.current).forEach((el) => {
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [promoVideos, isDesktop]);
 
   useEffect(() => {
     async function fetchData() {
@@ -142,7 +178,10 @@ export default function HomePage() {
             </div>
 
             {/* SCROLLABLE AREA: Prayer circle moved inside to vanish with buttons */}
-            <div className="mt-2 w-full max-h-[550px] overflow-y-auto custom-scrollbar px-2 flex flex-col items-center pb-10">
+            <div
+              ref={mobileScrollRef}
+              className="mt-2 w-full max-h-[550px] overflow-y-auto custom-scrollbar px-2 flex flex-col items-center pb-10"
+            >
               <div className="mt-2 mb-1 shrink-0"><PrayerTimeCircle size={150} /></div>
 
               <div className="flex flex-col items-center space-y-3 w-full mt-2">
@@ -157,7 +196,12 @@ export default function HomePage() {
                 ))}
 
                 {!isDesktop && promoVideos.map((video) => (
-                  <div key={video.id} className="w-full flex-shrink-0 space-y-4 pt-8">
+                  <div
+                    key={video.id}
+                    ref={el => videoElementsRef.current[video.id] = el}
+                    data-video-id={video.youtubeId}
+                    className="w-full flex-shrink-0 space-y-4 pt-8"
+                  >
                     <div className="flex items-center gap-2 w-full px-4 mb-2">
                       <div className="h-[1px] flex-1 bg-white/10"></div>
                       <span className="text-white/30 text-[8px] font-black uppercase tracking-[0.2em]">Highlight</span>
@@ -168,7 +212,7 @@ export default function HomePage() {
                       {playingVideoId === video.youtubeId ? (
                         <div className="relative w-full h-full">
                           <iframe
-                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
+                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1&mute=1`}
                             title={video.title}
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -218,7 +262,10 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[#001a1a]/80 backdrop-blur-sm opacity-90"></div>
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
 
-          <div className="relative z-10 w-full max-7-xl mx-auto flex items-center justify-between px-20 h-full overflow-y-auto custom-scrollbar">
+          <div
+            ref={desktopScrollRef}
+            className="relative z-10 w-full max-7-xl mx-auto flex items-center justify-between px-20 h-full overflow-y-auto custom-scrollbar"
+          >
             <div className="flex flex-col space-y-12 animate-in fade-in slide-in-from-left-8 duration-1000">
               <div className="space-y-4">
                 {logoUrl ? (
@@ -251,12 +298,17 @@ export default function HomePage() {
                 ))}
 
                 {isDesktop && promoVideos.map((video) => (
-                  <div key={video.id} className="space-y-4 pt-10">
+                  <div
+                    key={video.id}
+                    ref={el => videoElementsRef.current[video.id] = el}
+                    data-video-id={video.youtubeId}
+                    className="space-y-4 pt-10"
+                  >
                     <div className="relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-xl bg-black">
                       {playingVideoId === video.youtubeId ? (
                         <div className="relative w-full h-full">
                           <iframe
-                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
+                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1&mute=1`}
                             title={video.title}
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
