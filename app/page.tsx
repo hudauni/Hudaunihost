@@ -29,8 +29,6 @@ export default function HomePage() {
   const router = useRouter();
 
   // Refs for Autoplay Logic
-  const mobileScrollRef = useRef<HTMLDivElement>(null);
-  const desktopScrollRef = useRef<HTMLDivElement>(null);
   const videoElementsRef = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
@@ -46,12 +44,12 @@ export default function HomePage() {
     }
   }, [user, authLoading, router]);
 
-  // Facebook-style Autoplay on Scroll Logic
+  // Facebook-style Autoplay on Scroll Logic (Optimized for Mobile/Vercel)
   useEffect(() => {
     if (promoVideos.length === 0) return;
 
     const observerOptions = {
-      root: isDesktop ? desktopScrollRef.current : mobileScrollRef.current,
+      root: null, // Use Viewport for better reliability on all devices
       rootMargin: '0px',
       threshold: 0.6 // Video must be 60% visible to play
     };
@@ -75,7 +73,7 @@ export default function HomePage() {
     });
 
     return () => observer.disconnect();
-  }, [promoVideos, isDesktop]);
+  }, [promoVideos]);
 
   useEffect(() => {
     async function fetchData() {
@@ -177,9 +175,8 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* SCROLLABLE AREA: Prayer circle moved inside to vanish with buttons */}
+            {/* SCROLLABLE AREA */}
             <div
-              ref={mobileScrollRef}
               className="mt-2 w-full max-h-[550px] overflow-y-auto custom-scrollbar px-2 flex flex-col items-center pb-10"
             >
               <div className="mt-2 mb-1 shrink-0"><PrayerTimeCircle size={150} /></div>
@@ -212,7 +209,7 @@ export default function HomePage() {
                       {playingVideoId === video.youtubeId ? (
                         <div className="relative w-full h-full">
                           <iframe
-                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1&mute=1`}
+                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
                             title={video.title}
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -263,7 +260,6 @@ export default function HomePage() {
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
 
           <div
-            ref={desktopScrollRef}
             className="relative z-10 w-full max-7-xl mx-auto flex items-center justify-between px-20 h-full overflow-y-auto custom-scrollbar"
           >
             <div className="flex flex-col space-y-12 animate-in fade-in slide-in-from-left-8 duration-1000">
@@ -308,7 +304,7 @@ export default function HomePage() {
                       {playingVideoId === video.youtubeId ? (
                         <div className="relative w-full h-full">
                           <iframe
-                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1&mute=1`}
+                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
                             title={video.title}
                             frameBorder="0"
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
