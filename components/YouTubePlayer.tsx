@@ -142,15 +142,15 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
         </div>
       )}
 
-      {/* --- RESPONSIVE OVERLAYS --- */}
-      {/* Top Overlay: 60px on Desktop, ~18% on Mobile */}
-      <div className="absolute top-0 left-0 right-0 h-[18%] lg:h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-
-      {/* Bottom Overlay: 60px on Desktop, ~18% on Mobile */}
-      <div className="absolute bottom-0 left-0 right-0 h-[18%] lg:h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-
-      {/* Right Overlay: 120px on Desktop, ~30% on Mobile */}
+      {/* --- RESPONSIVE OVERLAYS (Now Fully Transparent) --- */}
+      {/* Top Protection */}
+      <div className="absolute top-0 left-0 right-0 h-[30%] lg:h-[80px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+      {/* Bottom Protection */}
+      <div className="absolute bottom-0 left-0 right-0 h-[20%] lg:h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+      {/* Right Protection */}
       <div className="absolute top-0 bottom-0 right-0 w-[30%] lg:w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+      {/* Left Protection */}
+      <div className="absolute top-0 bottom-0 left-0 w-[30%] lg:w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
     </div>
   );
 }

@@ -179,11 +179,15 @@ export default function WhatIsIslamPage() {
                   className="w-full h-full"
                 ></iframe>
 
-                {/* Top Overlay */}
-                <div className="absolute top-0 left-0 right-0 h-[15%] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
-
-                {/* Bottom Overlay */}
-                <div className="absolute bottom-0 right-0 w-[20%] h-[15%] lg:w-[100px] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
+                {/* --- RESPONSIVE OVERLAYS (Colored for testing) --- */}
+                {/* Top Protection */}
+                <div className="absolute top-0 left-0 right-0 h-[30%] lg:h-[80px] z-[105] bg-red-500/20 pointer-events-auto cursor-default"></div>
+                {/* Bottom Protection */}
+                <div className="absolute bottom-0 left-0 right-0 h-[20%] lg:h-[60px] z-[105] bg-red-500/20 pointer-events-auto cursor-default"></div>
+                {/* Right Protection */}
+                <div className="absolute top-0 bottom-0 right-0 w-[30%] lg:w-[120px] z-[105] bg-blue-500/20 pointer-events-auto cursor-default"></div>
+                {/* Left Protection */}
+                <div className="absolute top-0 bottom-0 left-0 w-[30%] lg:w-[120px] z-[105] bg-blue-500/20 pointer-events-auto cursor-default"></div>
               </div>
             </div>
           </div>

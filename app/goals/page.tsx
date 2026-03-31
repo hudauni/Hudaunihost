@@ -46,7 +46,7 @@ export default function GoalsPage() {
 
         {/* --- MOBILE VERSION --- */}
         <div
-          className="lg:hidden w-full min-h-screen flex flex-col items-center bg-no-repeat pt-0 pb-6 overflow-hidden"
+          className="lg:hidden w-full h-[calc(100vh+2px)] flex flex-col items-center bg-no-repeat pt-0 pb-6 overflow-hidden"
           style={{
             backgroundImage: "url('/images/bgimg.webp')",
             backgroundSize: "100% 100%",
@@ -163,11 +163,11 @@ export default function GoalsPage() {
                   className="w-full h-full"
                 ></iframe>
 
-                {/* Top Overlay */}
-                <div className="absolute top-0 left-0 right-0 h-[15%] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
-
-                {/* Bottom Overlay */}
-                <div className="absolute bottom-0 right-0 w-[20%] h-[15%] lg:w-[100px] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
+                {/* --- RESPONSIVE OVERLAYS (Colored for testing) --- */}
+                <div className="absolute top-0 left-0 right-0 h-[30%] lg:h-[80px] z-[105] bg-red-500/20 pointer-events-auto cursor-default"></div>
+                <div className="absolute bottom-0 left-0 right-0 h-[20%] lg:h-[60px] z-[105] bg-red-500/20 pointer-events-auto cursor-default"></div>
+                <div className="absolute top-0 bottom-0 right-0 w-[30%] lg:w-[120px] z-[105] bg-blue-500/20 pointer-events-auto cursor-default"></div>
+                <div className="absolute top-0 bottom-0 left-0 w-[30%] lg:w-[120px] z-[105] bg-blue-500/20 pointer-events-auto cursor-default"></div>
               </div>
             </div>
           </div>
