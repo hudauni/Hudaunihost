@@ -176,10 +176,10 @@ export default function HomePage() {
                           ></iframe>
 
                           {/* --- MOBILE RESPONSIVE OVERLAYS (Colored for Debugging) --- */}
-                          {/* Top Protection: Increased to 22% (~ +20px) */}
-                          <div className="absolute top-0 left-0 right-0 h-[22%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
+                          {/* Top Protection: Increased to 30% */}
+                          <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
                           {/* Bottom Protection */}
-                          <div className="absolute bottom-0 left-0 right-0 h-[18%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
+                          <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
                           {/* Right Protection */}
                           <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
                           {/* Left Protection */}
