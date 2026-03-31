@@ -325,7 +325,7 @@ export default function HomePage() {
                             className="w-full h-full object-cover opacity-40 group-hover:opacity-80 transition-all"
                           />
                           <div className="absolute inset-0 flex items-center justify-center"><Play size={40} className="text-white fill-white/20" /></div>
-                          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent text-center">
+                          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent text-center">
                             <h4 className="text-white font-bold text-lg font-bengali">{video.title}</h4>
                           </div>
                         </div>
