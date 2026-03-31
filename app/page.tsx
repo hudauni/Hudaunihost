@@ -175,10 +175,15 @@ export default function HomePage() {
                             className="w-full h-full"
                           ></iframe>
 
-                          {/* --- RESPONSIVE OVERLAYS --- */}
-                          <div className="absolute top-0 left-0 right-0 h-[18%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute bottom-0 left-0 right-0 h-[18%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          {/* --- MOBILE RESPONSIVE OVERLAYS (Colored for Debugging) --- */}
+                          {/* Top Protection: Increased to 22% (~ +20px) */}
+                          <div className="absolute top-0 left-0 right-0 h-[22%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
+                          {/* Bottom Protection */}
+                          <div className="absolute bottom-0 left-0 right-0 h-[18%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
+                          {/* Right Protection */}
+                          <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
+                          {/* Left Protection */}
+                          <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
                         </div>
                       ) : (
                         <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
@@ -262,10 +267,15 @@ export default function HomePage() {
                             className="w-full h-full"
                           ></iframe>
 
-                          {/* --- DESKTOP OVERLAYS --- */}
-                          <div className="absolute top-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute top-0 bottom-0 right-0 w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          {/* --- DESKTOP OVERLAYS (Colored for Debugging) --- */}
+                          {/* Top Protection: Increased to 80px */}
+                          <div className="absolute top-0 left-0 right-0 h-[80px] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
+                          {/* Bottom Protection: 60px */}
+                          <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
+                          {/* Right Protection: 120px */}
+                          <div className="absolute top-0 bottom-0 right-0 w-[120px] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
+                          {/* Left Protection: 120px */}
+                          <div className="absolute top-0 bottom-0 left-0 w-[120px] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
                         </div>
                       ) : (
                         <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
