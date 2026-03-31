@@ -122,7 +122,7 @@ export default function HomePage() {
           </Link>
 
           <div className="w-full max-w-[360px] flex flex-col items-center z-10 px-4">
-            <div className="flex flex-col items-center pt-[106px] text-center space-y-1">
+            <div className="flex flex-col items-center pt-[60px] text-center space-y-1">
               {logoUrl ? (
                 <div className="relative h-16 w-40 mb-2">
                   <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
@@ -133,9 +133,10 @@ export default function HomePage() {
                 </h1>
               )}
               <p className="text-white/70 text-[10px] font-light tracking-[0.2em] uppercase">University</p>
-              <div className="mt-2">
-                <p className="text-white/90 text-[10px] font-medium font-bengali">
-                  আসসালামু আলাইকুম {userData?.displayName?.split(' ')[0]}! আইডি: <AssociateId className="text-cyan-300 font-bold" />
+              <div className="mt-3">
+                <p className="text-white/90 text-[11px] font-medium font-bengali leading-relaxed">
+                  আসসালামু আলাইকুম {userData?.displayName}!<br />
+                  আপনার আইডি - <AssociateId className="text-cyan-300 font-bold" />
                 </p>
               </div>
             </div>
@@ -175,15 +176,11 @@ export default function HomePage() {
                             className="w-full h-full"
                           ></iframe>
 
-                          {/* --- MOBILE RESPONSIVE OVERLAYS (Colored for Debugging) --- */}
-                          {/* Top Protection: Increased to 30% */}
-                          <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
-                          {/* Bottom Protection */}
-                          <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
-                          {/* Right Protection */}
-                          <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
-                          {/* Left Protection */}
-                          <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
+                          {/* --- MOBILE RESPONSIVE OVERLAYS --- */}
+                          <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
                         </div>
                       ) : (
                         <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
@@ -221,7 +218,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-[#001a1a]/80 backdrop-blur-sm opacity-90"></div>
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
 
-          <div className="relative z-10 w-full max-w-7xl mx-auto flex items-center justify-between px-20 h-full overflow-y-auto custom-scrollbar">
+          <div className="relative z-10 w-full max-7-xl mx-auto flex items-center justify-between px-20 h-full overflow-y-auto custom-scrollbar">
             <div className="flex flex-col space-y-12 animate-in fade-in slide-in-from-left-8 duration-1000">
               <div className="space-y-4">
                 {logoUrl ? (
@@ -267,15 +264,10 @@ export default function HomePage() {
                             className="w-full h-full"
                           ></iframe>
 
-                          {/* --- DESKTOP OVERLAYS (Colored for Debugging) --- */}
-                          {/* Top Protection: Increased to 80px */}
-                          <div className="absolute top-0 left-0 right-0 h-[80px] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
-                          {/* Bottom Protection: 60px */}
-                          <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-red-500/20 pointer-events-auto cursor-default"></div>
-                          {/* Right Protection: 120px */}
-                          <div className="absolute top-0 bottom-0 right-0 w-[120px] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
-                          {/* Left Protection: 120px */}
-                          <div className="absolute top-0 bottom-0 left-0 w-[120px] z-10 bg-blue-500/20 pointer-events-auto cursor-default"></div>
+                          <div className="absolute top-0 left-0 right-0 h-[80px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute top-0 bottom-0 right-0 w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          <div className="absolute top-0 bottom-0 left-0 w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
                         </div>
                       ) : (
                         <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
