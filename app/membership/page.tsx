@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Loader2, Lock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, Loader2, Lock, CheckCircle2, X, AlertTriangle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import GlassButton from '@/components/GlassButton';
 import { useRouter } from 'next/navigation';
@@ -18,10 +18,14 @@ export default function MembershipPage() {
   const [userProgress, setUserProgress] = useState<any>({});
   const [loading, setLoading] = useState(true);
 
+  // Modal State
+  const [showLockedModal, setShowLockedModal] = useState(false);
+  const [prevLevelTitle, setPrevLevelTitle] = useState("");
+
   useEffect(() => {
     async function fetchData() {
       try {
-        // 1. Fetch all levels (Sorted in-memory to avoid Index Error)
+        // 1. Fetch all levels
         const levelsSnap = await getDocs(collection(db, "membershipLevels"));
         const levelsData = levelsSnap.docs
           .map(d => ({ id: d.id, ...d.data() }))
@@ -56,7 +60,7 @@ export default function MembershipPage() {
     let levelTasks = allTasks.filter(t => t.levelId === levelId);
     if (levelTasks.length === 0) return false;
 
-    // For Associate, only tasks 1-7 are required for progression (8-10 are special)
+    // For Associate, only tasks 1-7 are required for progression
     if (levelId === 'associate') {
       levelTasks = levelTasks.filter(t => (t.order || 0) < 8);
     }
@@ -66,17 +70,23 @@ export default function MembershipPage() {
   };
 
   const getLevelStatus = (levelId: string, index: number) => {
-    // 1. Associate (index 0) is always unlocked
     if (index === 0) return { unlocked: true, completed: isLevelFullyCompleted(levelId) };
-
-    // 2. Other levels unlock only if the previous level is completed
     const prevLevel = levels[index - 1];
     const prevCompleted = isLevelFullyCompleted(prevLevel.id);
-
     return {
       unlocked: prevCompleted,
       completed: isLevelFullyCompleted(levelId)
     };
+  };
+
+  const handleLevelClick = (level: any, index: number) => {
+    const { unlocked } = getLevelStatus(level.id, index);
+    if (unlocked) {
+      router.push(`/membership/${level.id}`);
+    } else {
+      setPrevLevelTitle(levels[index - 1]?.title || "পূর্ববর্তী লেভেল");
+      setShowLockedModal(true);
+    }
   };
 
   if (authLoading || loading) {
@@ -115,7 +125,7 @@ export default function MembershipPage() {
                   <GlassButton
                     title={level.title}
                     variant="membership-mobile"
-                    onClick={() => unlocked && router.push(`/membership/${level.id}`)}
+                    onClick={() => handleLevelClick(level, index)}
                     className={!unlocked ? "opacity-60 grayscale cursor-not-allowed" : ""}
                   />
                   <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -150,7 +160,7 @@ export default function MembershipPage() {
                     <GlassButton
                       title={level.title}
                       variant="membership-desktop"
-                      onClick={() => unlocked && router.push(`/membership/${level.id}`)}
+                      onClick={() => handleLevelClick(level, index)}
                       className={!unlocked ? "opacity-50 grayscale cursor-not-allowed" : ""}
                     />
                     <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none transition-all group-hover:scale-110">
@@ -171,6 +181,42 @@ export default function MembershipPage() {
             </Link>
           </div>
         </div>
+
+        {/* --- LOCKED LEVEL MODAL --- */}
+        {showLockedModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/60 animate-in fade-in duration-300">
+            <div className="bg-[#002b2b] border border-white/10 w-full max-w-md rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-emerald-500 to-red-500"></div>
+
+              <button
+                onClick={() => setShowLockedModal(false)}
+                className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/40 transition-all"
+              >
+                <X size={20} />
+              </button>
+
+              <div className="flex flex-col items-center text-center space-y-6">
+                <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 border border-red-500/20 shadow-2xl shadow-red-500/10">
+                  <Lock size={40} />
+                </div>
+
+                <div className="space-y-3">
+                  <h3 className="text-2xl font-black text-white font-bengali">লেভেলটি এখনো লক করা!</h3>
+                  <p className="text-white/60 font-bengali leading-relaxed text-sm">
+                    দুঃখিত! এই লেভেলটিতে প্রবেশ করতে হলে আপনাকে প্রথমে <span className="text-emerald-400 font-bold underline underline-offset-4">{prevLevelTitle}</span> লেভেলের সকল টাস্ক ও ভিডিও সম্পন্ন করতে হবে।
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowLockedModal(false)}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold font-bengali transition-all shadow-lg active:scale-95 border-t border-white/20"
+                >
+                  ঠিক আছে
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, BookOpen, Search, X } from 'lucide-react';
+import { ChevronLeft, BookOpen, Search, X, PlayCircle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
 
 const BENGALI_SURAH_NAMES: Record<number, string> = {
   1: "আল ফাতিহা", 2: "আল বাকারা", 3: "আল ইমরান", 4: "আন নিসা", 5: "আল মায়িদাহ", 6: "আল আনআম", 7: "আল আরাফ", 8: "আল আনফাল", 9: "আত তাওবাহ", 10: "ইউনুস",
@@ -30,6 +31,7 @@ interface Surah {
 }
 
 export default function QuranListPage() {
+  const { userData } = useAuth();
   const [surahs, setSurahs] = useState<Surah[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,6 +64,8 @@ export default function QuranListPage() {
     });
   }, [surahs, searchQuery]);
 
+  const lastRead = userData?.lastRead;
+
   return (
     <div className="h-screen w-full bg-[#001a1a] flex flex-col font-sans overflow-hidden">
       <Navbar showHome={true} />
@@ -70,21 +74,20 @@ export default function QuranListPage() {
 
         {/* --- MOBILE VERSION --- */}
         <div
-          className="lg:hidden w-full h-[calc(100vh+2px)] flex flex-col items-center bg-no-repeat pt-0 pb-6 overflow-hidden"
-          style={{
-            backgroundImage: "url('/images/bgimg.webp')",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-          }}
+          className="lg:hidden w-full h-[calc(100vh+2px)] flex flex-col items-center pt-0 pb-6 overflow-hidden bg-gradient-to-b from-[#002b2b] via-[#001a1a] to-[#000d0d]"
         >
           <div className="w-full flex justify-between items-center px-6 pt-4 mb-0">
-            <Link href="/" className="p-2 bg-white/10 backdrop-blur-md rounded-full text-white shadow-lg">
+            <Link href="/" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors">
               <ChevronLeft size={18} />
             </Link>
 
+            <h2 className="text-emerald-400 text-lg font-bold font-bengali">
+              আল কুরআন
+            </h2>
+
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 bg-emerald-500 rounded-full text-white shadow-lg border border-emerald-400/30"
+              className={`p-2 rounded-full transition-all ${isSearchOpen ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white'}`}
             >
               {isSearchOpen ? <X size={18} /> : <Search size={18} />}
             </button>
@@ -97,40 +100,49 @@ export default function QuranListPage() {
               placeholder="সুরার নাম বা নম্বর দিয়ে খুঁজুন..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-black/30 border border-white/20 rounded-xl px-4 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 placeholder:text-white/30 font-bengali"
+              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 placeholder:text-white/20 font-bengali"
             />
           </div>
 
-          <h2 className={`text-emerald-900 text-xl font-extrabold mb-4 drop-shadow-sm font-bengali transition-all ${isSearchOpen ? 'mt-4' : '-mt-[27px]'}`}>
-            আল কুরআন
-          </h2>
+          {/* Continue Reading Button - Mobile */}
+          {!loading && lastRead && (
+            <div className="w-full px-6 mt-6">
+              <Link
+                href={`/quran/${lastRead.surahId}#ayah-${lastRead.surahId}-${lastRead.ayahNum}`}
+                className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-[#001a1a] rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
+              >
+                <PlayCircle size={20} fill="currentColor" className="text-emerald-900" />
+                <span className="font-bengali text-sm">পড়া চালিয়ে যান: {lastRead.surahName} (আয়াত {toBengaliNumber(lastRead.ayahNum)})</span>
+              </Link>
+            </div>
+          )}
 
-          <div className="flex-1 w-full overflow-y-auto custom-scrollbar px-6 flex flex-col items-center space-y-3.5 mb-10">
+          <div className="flex-1 w-full overflow-y-auto custom-scrollbar px-6 flex flex-col items-center space-y-3 mt-6 mb-10">
             {loading ? (
               <div className="flex justify-center pt-20">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
               </div>
             ) : filteredSurahs.length > 0 ? (
               filteredSurahs.map((surah) => (
                 <Link
                   key={surah.number}
                   href={`/quran/${surah.number}`}
-                  className="w-full max-w-[300px] p-4 bg-gradient-to-br from-[#1a472a]/70 to-[#001a1a]/90 backdrop-blur-xl rounded-2xl border-t border-white/30 border-l border-white/20 shadow-[0_8px_15px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3)] border border-white/10 flex items-center justify-between active:translate-y-1 transition-all"
+                  className="w-full max-w-[320px] p-4 bg-white/[0.03] backdrop-blur-xl rounded-xl border border-white/5 flex items-center justify-between active:bg-white/10 transition-all shadow-lg"
                 >
                   <div className="flex items-center space-x-4 flex-1">
-                    <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center text-black font-bold shadow-inner">
+                    <div className="w-9 h-9 bg-emerald-500/10 rounded flex items-center justify-center text-emerald-400 font-black text-xs border border-emerald-500/20">
                       {toBengaliNumber(surah.number)}
                     </div>
                     <div>
-                      <h3 className="text-white font-bold text-[14px] font-bengali drop-shadow-md">{BENGALI_SURAH_NAMES[surah.number]}</h3>
-                      <p className="text-white/40 text-[10px] font-medium">{surah.englishName} • {toBengaliNumber(surah.numberOfAyahs)} আয়াত</p>
+                      <h3 className="text-white font-bold text-sm font-bengali">{BENGALI_SURAH_NAMES[surah.number]}</h3>
+                      <p className="text-white/20 text-[9px] font-medium uppercase tracking-wider">{surah.englishName} • {toBengaliNumber(surah.numberOfAyahs)} আয়াত</p>
                     </div>
                   </div>
-                  <BookOpen size={16} className="text-emerald-400/40" />
+                  <ChevronLeft size={14} className="text-white/10 rotate-180" />
                 </Link>
               ))
             ) : (
-              <div className="text-white/40 text-sm mt-10 font-bengali">কোনো সুরা খুঁজে পাওয়া যায়নি</div>
+              <div className="text-white/20 text-xs mt-10 font-bengali uppercase tracking-widest font-bold">কোনো সুরা পাওয়া যায়নি</div>
             )}
           </div>
         </div>
@@ -165,6 +177,19 @@ export default function QuranListPage() {
               </div>
             </div>
 
+            {/* Continue Reading Button - Desktop */}
+            {!loading && lastRead && (
+              <div className="w-full max-w-md mb-16 animate-in fade-in slide-in-from-top-4 duration-700">
+                <Link
+                  href={`/quran/${lastRead.surahId}#ayah-${lastRead.surahId}-${lastRead.ayahNum}`}
+                  className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-[#001a1a] rounded-2xl font-black text-lg flex items-center justify-center gap-4 shadow-2xl shadow-emerald-500/30 transition-all hover:-translate-y-1 active:scale-95 group"
+                >
+                  <PlayCircle size={28} fill="currentColor" className="text-emerald-900 group-hover:scale-110 transition-transform" />
+                  <span className="font-bengali">পড়া চালিয়ে যান: {lastRead.surahName} (আয়াত {toBengaliNumber(lastRead.ayahNum)})</span>
+                </Link>
+              </div>
+            )}
+
             {loading ? (
               <div className="animate-pulse text-emerald-400">সুরা লোড হচ্ছে...</div>
             ) : (
@@ -173,22 +198,22 @@ export default function QuranListPage() {
                   <Link
                     key={surah.number}
                     href={`/quran/${surah.number}`}
-                    className="group p-6 bg-gradient-to-br from-[#1a472a]/40 to-[#001a1a]/60 backdrop-blur-3xl border-t border-white/20 border-l border-white/10 rounded-2xl flex items-center justify-between transition-all duration-300 hover:-translate-y-1 shadow-[0_20px_40px_rgba(0,0,0,0.5),inset_0_-2px_6px_rgba(0,0,0,0.3)] hover:border-emerald-500/30"
+                    className="group p-6 bg-white/[0.03] backdrop-blur-3xl border border-white/5 rounded-xl flex items-center justify-between transition-all duration-300 hover:-translate-y-1 shadow-2xl hover:border-emerald-500/30"
                   >
                     <div className="flex items-center space-x-5 flex-1">
-                      <div className="w-12 h-12 bg-emerald-500/10 rounded-xl flex items-center justify-center text-black font-bold text-lg group-hover:bg-emerald-500 group-hover:text-white transition-colors shadow-inner">
+                      <div className="w-12 h-12 bg-emerald-500/10 rounded-lg flex items-center justify-center text-emerald-400 font-black text-xl group-hover:bg-emerald-500 group-hover:text-white transition-colors shadow-inner border border-emerald-500/20">
                         {surah.number}
                       </div>
                       <div>
                         <h3 className="text-white font-bold text-xl font-bengali drop-shadow-lg">{BENGALI_SURAH_NAMES[surah.number]}</h3>
-                        <p className="text-emerald-100/40 text-sm">{surah.englishName} • {surah.numberOfAyahs} Ayahs</p>
+                        <p className="text-white/20 text-sm font-medium uppercase tracking-wider">{surah.englishName} • {surah.numberOfAyahs} Ayahs</p>
                       </div>
                     </div>
                     <BookOpen size={20} className="text-white/10 group-hover:text-emerald-400 transition-colors" />
                   </Link>
                 ))}
                 {filteredSurahs.length === 0 && (
-                  <div className="col-span-full text-center text-emerald-100/30 py-20 font-bengali">কোনো সুরা খুঁজে পাওয়া যায়নি</div>
+                  <div className="col-span-full text-center text-emerald-100/30 py-20 font-bengali uppercase tracking-widest font-black text-2xl">কোনো সুরা পাওয়া যায়নি</div>
                 )}
               </div>
             )}

@@ -2,65 +2,87 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    
+
+    // ফংশন: চেক ইউজার এডমিন কিনা (ইউজার ডাটাবেস থেকে রোল চেক করা হবে)
+    function isAdmin() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // ১. ইউজার প্রোফাইল এবং আইডি কাউন্টার
-    match /users/{document} {
-      allow read, write: if true;
+    match /users/{userId} {
+      // ইউজার নিজের ডাটা পড়তে পারবে, কিন্তু লিখার ক্ষেত্রে এডমিন বা নিজের ডাটা হতে হবে
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
     match /counters/{document} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
     
     // ২. মেম্বারশিপ সিস্টেম (লেভেল, টাস্ক এবং ভিডিওর তালিকা)
     match /membershipLevels/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null; // ডেভেলপার সেটিংস ফিক্স করার জন্য সাময়িকভাবে সবার জন্য উন্মুক্ত
     }
     match /membershipTasks/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
     match /membershipVideos/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
     
     // ৩. ইউজার প্রগ্রেস ট্র্যাকিং
     match /userProgress/{document} {
-      allow read, write: if true;
+      allow read, write: if request.auth != null;
     }
 
     // ৪. কন্টেন্ট সেকশন ভিডিও (ইসলাম কি?, দক্ষতা, লক্ষ্য ও উদ্দেশ্য)
     match /whatIsIslamVideos/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
     match /skillsVideos/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
     match /goalsVideos/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
 
-    // ৫. ওয়েবসাইট সেটিংস (লোগো ইত্যাদি)
+    // ৫. ওয়েবসাইট সেটিংস (লোগো, পেমেন্ট পেজ ভিডিও ইত্যাদি)
     match /settings/{document} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if request.auth != null; // Missing permissions এরর ফিক্স করার জন্য সাময়িকভাবে সবার জন্য উন্মুক্ত
     }
 
     // ৬. সাদকা রিকোয়েস্ট
     match /sadakaRequests/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
 
-    // ৭. হোম পেজ মেনু বাটন
+    // ৭. হোম পেজ মেনু এবং প্রোমো ভিডিও
     match /homeMenu/{document} {
-      allow read, write: if true;
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
+    match /homeVideos/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
 
-    // ৮. হোম পেজ প্রোমো ভিডিও
-    match /homeVideos/{document} {
-      allow read, write: if true;
+    // ৮. কোর্স এনরোলমেন্ট রিকোয়েস্ট
+    match /courseRequests/{document} {
+      allow read, write: if request.auth != null;
     }
     
-    // অন্য সব কিছুর জন্য ডিফল্ট সিকিউরিটি (সুরক্ষার জন্য বন্ধ রাখা হয়েছে)
+    // অন্য সব কিছুর জন্য ডিফল্ট সিকিউরিটি
     match /{document=**} {
-      allow read, write: if false;
+      allow read, write: if request.auth != null;
     }
   }
 }

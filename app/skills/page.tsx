@@ -164,13 +164,14 @@ export default function SkillsPage() {
             <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300">
               <button
                 onClick={() => setSelectedVideo(null)}
-                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-[110]"
+                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-[130]"
               >
                 <X size={24} />
               </button>
+
               <div className="relative w-full h-full">
                 <iframe
-                  src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&modestbranding=1&rel=0`}
+                  src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1`}
                   title="YouTube video player"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -178,11 +179,15 @@ export default function SkillsPage() {
                   className="w-full h-full"
                 ></iframe>
 
-                {/* Top Overlay */}
-                <div className="absolute top-0 left-0 right-0 h-[15%] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
-
-                {/* Bottom Overlay */}
-                <div className="absolute bottom-0 right-0 w-[20%] h-[15%] lg:w-[100px] lg:h-[60px] z-[105] bg-transparent pointer-events-auto"></div>
+                {/* --- RESPONSIVE OVERLAYS (Colored for testing) --- */}
+                {/* Top Protection */}
+                <div className="absolute top-0 left-0 right-0 h-[18%] lg:h-[60px] z-[120] bg-red-500/20 pointer-events-auto cursor-default"></div>
+                {/* Bottom Protection */}
+                <div className="absolute bottom-0 left-0 right-0 h-[18%] z-[120] bg-red-500/20 pointer-events-auto cursor-default"></div>
+                {/* Right Protection */}
+                <div className="absolute top-0 bottom-0 right-0 w-[30%] lg:w-[120px] z-[120] bg-blue-500/20 pointer-events-auto cursor-default"></div>
+                {/* Left Protection */}
+                <div className="absolute top-0 bottom-0 left-0 w-[30%] lg:w-[120px] z-[120] bg-blue-500/20 pointer-events-auto cursor-default"></div>
               </div>
             </div>
           </div>

@@ -44,30 +44,31 @@ export default function HomePage() {
     }
   }, [user, authLoading, router]);
 
-  // Facebook-style Autoplay on Scroll Logic (Optimized for Mobile/Vercel)
+  // Facebook-style Autoplay on Scroll Logic (Plays only when in the center)
   useEffect(() => {
     if (promoVideos.length === 0) return;
 
     const observerOptions = {
-      root: null, // Use Viewport for better reliability on all devices
-      rootMargin: '0px',
-      threshold: 0.6 // Video must be 60% visible to play
+      root: null,
+      rootMargin: '-45% 0% -45% 0%',
+      threshold: 0
     };
 
     const observerCallback = (entries: IntersectionObserverEntry[]) => {
       entries.forEach((entry) => {
+        const videoId = entry.target.getAttribute('data-video-id');
         if (entry.isIntersecting) {
-          const videoId = entry.target.getAttribute('data-video-id');
           if (videoId) {
             setPlayingVideoId(videoId);
           }
+        } else {
+          setPlayingVideoId(current => (current === videoId ? null : current));
         }
       });
     };
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
 
-    // Observe all video card elements
     Object.values(videoElementsRef.current).forEach((el) => {
       if (el) observer.observe(el);
     });
@@ -156,7 +157,7 @@ export default function HomePage() {
           </Link>
 
           <div className="w-full max-w-[360px] flex flex-col items-center z-10 px-4">
-            <div className="flex flex-col items-center pt-[60px] text-center space-y-1">
+            <div className="flex flex-col items-center pt-[90px] text-center space-y-1">
               {logoUrl ? (
                 <div className="relative h-16 w-40 mb-2">
                   <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
@@ -166,11 +167,10 @@ export default function HomePage() {
                   Huda <span className="text-cyan-400">Uni</span>
                 </h1>
               )}
-              <p className="text-white/70 text-[10px] font-light tracking-[0.2em] uppercase">University</p>
               <div className="mt-3">
                 <p className="text-white/90 text-[11px] font-medium font-bengali leading-relaxed">
                   আসসালামু আলাইকুম {userData?.displayName}!<br />
-                  আপনার আইডি - <AssociateId className="text-cyan-300 font-bold" />
+                  আপনার অ্যাসোসিয়েট আইডি - <AssociateId className="text-cyan-300 font-bold" />
                 </p>
               </div>
             </div>
@@ -241,7 +241,7 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
-                    <Link href="/what-is-islam" className="w-full py-3.5 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">
+                    <Link href={`/enroll?course=${encodeURIComponent(video.title)}`} className="w-full py-3.5 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">
                       <Zap size={14} fill="currentColor" /> Enroll Now
                     </Link>
                   </div>
@@ -331,7 +331,7 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
-                    <Link href="/what-is-islam" className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl transition-all">
+                    <Link href={`/enroll?course=${encodeURIComponent(video.title)}`} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl transition-all">
                       <Zap size={18} fill="currentColor" /> Enroll Now
                     </Link>
                   </div>

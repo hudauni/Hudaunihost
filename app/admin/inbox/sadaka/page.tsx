@@ -11,7 +11,7 @@ import {
   orderBy,
   deleteDoc
 } from 'firebase/firestore';
-import { Check, X, Trash2, Clock, User, Hash, CreditCard, Wallet } from 'lucide-react';
+import { Check, X, Trash2, Clock, User, Hash, Phone, Wallet } from 'lucide-react';
 
 interface SadakaRequest {
   id: string;
@@ -20,7 +20,7 @@ interface SadakaRequest {
   displayName: string;
   email: string;
   associateId: string | number;
-  transactionId: string;
+  senderNumber: string;
   role?: string;
   createdAt: any;
 }
@@ -41,7 +41,6 @@ export default function AdminSadakaInbox() {
       const data = snap.docs.map(d => ({ id: d.id, ...d.data() })) as SadakaRequest[];
       setRequests(data);
 
-      // Calculate total approved amount
       const total = data
         .filter(req => req.status === 'approved')
         .reduce((sum, req) => sum + (Number(req.amount) || 0), 0);
@@ -81,7 +80,6 @@ export default function AdminSadakaInbox() {
           <p className="text-white/40">Manage donation verification requests</p>
         </div>
 
-        {/* Total Approved Amount Card */}
         <div className="bg-gradient-to-br from-emerald-600 to-emerald-900 p-6 rounded-xl shadow-xl border-t border-white/20 flex items-center gap-6 min-w-[280px]">
           <div className="w-14 h-14 bg-white/10 rounded-lg flex items-center justify-center text-white shadow-inner">
             <Wallet size={32} />
@@ -97,7 +95,7 @@ export default function AdminSadakaInbox() {
 
       <div className="grid grid-cols-1 gap-4">
         {requests.length === 0 ? (
-          <div className="py-20 text-center text-white/10 border-2 border-dashed border-white/5 rounded-xl">কোনো রিকোয়েস্ট নেই</div>
+          <div className="py-20 text-center text-white/10 border-2 border-dashed border-white/5 rounded-xl font-bengali">কোনো রিকোয়েস্ট নেই</div>
         ) : requests.map((req) => (
           <div
             key={req.id}
@@ -118,12 +116,12 @@ export default function AdminSadakaInbox() {
                 </div>
               </div>
 
-              {/* 2. Transaction ID & Amount */}
+              {/* 2. Sender Number & Amount */}
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-emerald-400/40 shadow-inner"><CreditCard size={20}/></div>
+                <div className="w-10 h-10 bg-white/5 rounded-lg flex items-center justify-center text-emerald-400/40 shadow-inner"><Phone size={20}/></div>
                 <div className="min-w-0">
                   <p className="text-[10px] text-white/40 uppercase font-bold tracking-widest">Payment</p>
-                  <h4 className="text-emerald-400 font-mono text-sm font-bold truncate select-all">{req.transactionId}</h4>
+                  <h4 className="text-emerald-400 font-mono text-sm font-bold truncate select-all">{req.senderNumber}</h4>
                   <p className="text-white font-black text-xs">Amount: {req.amount} BDT</p>
                 </div>
               </div>

@@ -11,14 +11,14 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 export default function SadakaPage() {
   const { user, userData } = useAuth();
   const [showInput, setShowShowInput] = useState(false);
-  const [transactionId, setTransactionId] = useState("");
+  const [senderNumber, setSenderNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !transactionId || !amount) return;
+    if (!user || !senderNumber || !amount) return;
 
     setLoading(true);
     try {
@@ -29,7 +29,7 @@ export default function SadakaPage() {
         associateId: userData?.associateId || "N/A",
         role: userData?.role || "associate",
         amount: amount,
-        transactionId: transactionId,
+        senderNumber: senderNumber,
         status: 'pending',
         createdAt: serverTimestamp(),
       });
@@ -111,12 +111,12 @@ export default function SadakaPage() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-[10px] text-white/40 uppercase font-bold ml-1 tracking-widest">Transaction ID (TrxID)</label>
+                        <label className="text-[10px] text-white/40 uppercase font-bold ml-1 tracking-widest">Sender Number</label>
                         <input
-                          type="text"
-                          placeholder="Ex: AB12CD34EF"
-                          value={transactionId}
-                          onChange={(e) => setTransactionId(e.target.value)}
+                          type="tel"
+                          placeholder="017xxxxxxxx"
+                          value={senderNumber}
+                          onChange={(e) => setSenderNumber(e.target.value)}
                           required
                           className="w-full bg-black/40 border border-white/10 rounded-sm px-5 py-4 text-white text-base outline-none focus:border-emerald-500/50 shadow-inner transition-all font-mono"
                         />
@@ -186,7 +186,7 @@ export default function SadakaPage() {
                 <div className="bg-black/40 p-10 rounded-sm border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.3)] space-y-8">
                   <div className="text-center">
                     <h3 className="text-2xl font-bold text-white font-bengali mb-2">রিকোয়েস্ট পাঠান</h3>
-                    <p className="text-white/20 text-[10px] uppercase tracking-widest font-bold font-sans">Transaction Verification</p>
+                    <p className="text-white/20 text-[10px] uppercase tracking-widest font-bold font-sans">Verification</p>
                   </div>
 
                   <form onSubmit={handleSubmit} className="space-y-6">
@@ -202,12 +202,12 @@ export default function SadakaPage() {
                       />
                     </div>
                     <div className="space-y-3">
-                      <label className="text-xs text-white/40 uppercase font-bold ml-1 font-sans tracking-widest">Transaction ID</label>
+                      <label className="text-xs text-white/40 uppercase font-bold ml-1 font-sans tracking-widest">Sender Number</label>
                       <input
-                        type="text"
-                        placeholder="Ex: AB12CD34EF"
-                        value={transactionId}
-                        onChange={(e) => setTransactionId(e.target.value)}
+                        type="tel"
+                        placeholder="017xxxxxxxx"
+                        value={senderNumber}
+                        onChange={(e) => setSenderNumber(e.target.value)}
                         required
                         className="w-full bg-white/5 border border-white/10 rounded-sm px-6 py-5 text-white text-lg outline-none focus:border-emerald-500/50 transition-all font-mono shadow-inner"
                       />

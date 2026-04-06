@@ -3,8 +3,11 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Search, X, ArrowRight, MoreVertical, Play, Pause, User, CheckCircle2, AlertCircle, ChevronsDown } from 'lucide-react';
+import { ChevronLeft, Search, X, ArrowRight, MoreVertical, Play, Pause, User, CheckCircle2, AlertCircle, ChevronsDown, Type, Mic2, ChevronRight, BookOpen, Bookmark, BookmarkCheck, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import { useAuth } from '@/context/AuthContext';
+import { db } from '@/lib/firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Ayah {
   number: number;
@@ -23,7 +26,6 @@ interface SurahData {
 
 const RECITERS = [
   { id: 'ar.alafasy', name: 'Mishary Rashid Alafasy' },
-  { id: 'ar.sudais', name: 'Abdurrahman Al-Sudais' },
   { id: 'ar.abdulsamad', name: 'Abdul Basit' },
   { id: 'ar.mahermuaiqly', name: 'Maher Al-Muaiqly' },
   { id: 'ar.hanirifai', name: 'Hani ar-Rifai' },
@@ -47,6 +49,7 @@ const BENGALI_SURAH_NAMES: Record<number, string> = {
 export default function SurahDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const { user } = useAuth();
   const [loadedSurahs, setSurahs] = useState<SurahData[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextSurahId, setNextSurahId] = useState<number | null>(null);
@@ -55,6 +58,7 @@ export default function SurahDetailPage() {
   // UI States
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [menuView, setMenuView] = useState<'main' | 'qari' | 'font' | 'surahList'>('main');
   const [selectedQari, setSelectedQari] = useState('ar.alafasy');
   const [playingAyahKey, setPlayingAyahKey] = useState<string | null>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
@@ -62,12 +66,22 @@ export default function SurahDetailPage() {
   const [ayahInput, setAyahInput] = useState("");
   const [highlightedAyah, setHighlightedAyah] = useState<string | null>(null);
 
+  // Manual Save State (Now using Ref for Performance)
+  const currentVisibleAyahRef = useRef<{sId: number, aId: number} | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
+
+  // Appearance States
+  const [arabicSize, setArabicSize] = useState(26);
+  const [bengaliSize, setBengaliSize] = useState(18);
+
   // Auto-Scroll States
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const observer = useRef<IntersectionObserver | null>(null);
+  const progressObserver = useRef<IntersectionObserver | null>(null);
   const scrollAccumulatorRef = useRef<number>(0);
 
   const toBengaliNumber = (num: number) => {
@@ -176,6 +190,28 @@ export default function SurahDetailPage() {
     };
   }, [playingAyahKey, scrollToAyah]);
 
+  const handleManualSave = async () => {
+    const current = currentVisibleAyahRef.current;
+    if (!user || !current) return;
+    setIsSaving(true);
+    try {
+      await updateDoc(doc(db, "users", user.uid), {
+        lastRead: {
+          surahId: current.sId,
+          ayahNum: current.aId,
+          timestamp: serverTimestamp(),
+          surahName: BENGALI_SURAH_NAMES[current.sId]
+        }
+      });
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 3000);
+    } catch (err) {
+      console.error("Error manual saving:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!surahInput) return;
@@ -210,22 +246,43 @@ export default function SurahDetailPage() {
     if (node) observer.current.observe(node);
   }, [loading, nextSurahId, isFetchingNext, loadNextSurah]);
 
+  // Track Centered Ayah using Ref (Optimized for Fast Scrolling)
+  useEffect(() => {
+    if (loadedSurahs.length === 0) return;
+
+    if (progressObserver.current) progressObserver.current.disconnect();
+
+    progressObserver.current = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          const sId = entry.target.getAttribute('data-surah');
+          const aId = entry.target.getAttribute('data-ayah');
+          if (sId && aId) {
+            // Update Ref ONLY - NO Re-render during scroll
+            currentVisibleAyahRef.current = { sId: parseInt(sId), aId: parseInt(aId) };
+          }
+        }
+      });
+    }, { threshold: 0.5, rootMargin: '-40% 0% -40% 0%' });
+
+    const elements = document.querySelectorAll('[data-ayah]');
+    elements.forEach(el => progressObserver.current?.observe(el));
+
+    return () => progressObserver.current?.disconnect();
+  }, [loadedSurahs]);
+
   // Handle Auto-Scrolling Effect
   useEffect(() => {
     let animationFrameId: number;
 
     const scroll = () => {
       if (isAutoScrolling) {
-        // Accumulate sub-pixel movement
-        // Multiplier adjusted for 3x max speed and extreme smoothness
         scrollAccumulatorRef.current += (scrollSpeed * 0.15);
-
         if (scrollAccumulatorRef.current >= 1 || scrollAccumulatorRef.current <= -1) {
           const pixelsToScroll = Math.floor(scrollAccumulatorRef.current);
           window.scrollBy(0, pixelsToScroll);
           scrollAccumulatorRef.current -= pixelsToScroll;
         }
-
         animationFrameId = requestAnimationFrame(scroll);
       }
     };
@@ -254,11 +311,15 @@ export default function SurahDetailPage() {
           setSurahs([data]);
           setNextSurahId(data.number < 114 ? data.number + 1 : null);
           checkDownloadStatus(params.id as string);
-          const hash = window.location.hash;
-          if (hash.startsWith('#ayah-')) {
-            const parts = hash.replace('#ayah-', '').split('-');
-            if (parts.length === 2) setTimeout(() => scrollToAyah(parts[0], parts[1]), 800);
-          }
+
+          // Small delay for rendering before scroll
+          setTimeout(() => {
+            const hash = window.location.hash;
+            if (hash.startsWith('#ayah-')) {
+              const parts = hash.replace('#ayah-', '').split('-');
+              if (parts.length === 2) scrollToAyah(parts[0], parts[1]);
+            }
+          }, 1000);
         }
       } catch (err) { console.error(err); } finally { if (isMounted) setLoading(false); }
     };
@@ -286,8 +347,16 @@ export default function SurahDetailPage() {
             >
               <ChevronsDown size={20} />
             </button>
+            <button
+              onClick={handleManualSave}
+              disabled={isSaving}
+              className={`p-2 rounded-full transition-all ${justSaved ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white hover:bg-white/10'}`}
+              title="Save Progress"
+            >
+              {isSaving ? <Loader2 size={20} className="animate-spin" /> : justSaved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+            </button>
             <button onClick={() => setIsSearchOpen(!isSearchOpen)} className={`p-2 rounded-full transition-all ${isSearchOpen ? 'bg-emerald-500 text-white' : 'bg-white/5 text-white hover:bg-white/10'}`}><Search size={20} /></button>
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors"><MoreVertical size={20} /></button>
+            <button onClick={() => { setIsMenuOpen(!isMenuOpen); setMenuView('main'); }} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors"><MoreVertical size={20} /></button>
           </div>
         </div>
 
@@ -304,24 +373,136 @@ export default function SurahDetailPage() {
         )}
       </div>
 
-      {/* --- QARI SELECTION SIDEBAR --- */}
+      {/* --- MENU SIDEBAR --- */}
       {isMenuOpen && (
         <div className="fixed inset-0 z-[100] flex justify-end">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)}></div>
           <div className="relative w-72 h-full bg-[#002b2b] border-l border-white/10 shadow-2xl p-6 flex flex-col animate-in slide-in-from-right duration-300">
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-white font-bold font-bengali text-lg">অডিও সেটিংস</h3>
+
+            {/* Header */}
+            <div className="flex justify-between items-center mb-10">
+              <h3 className="text-white font-bold font-bengali text-lg">
+                {menuView === 'main' ? 'সেটিংস' : menuView === 'qari' ? 'ক্বারী নির্বাচন' : menuView === 'font' ? 'ফন্ট সাইজ' : 'সকল সুরা'}
+              </h3>
               <button onClick={() => setIsMenuOpen(false)} className="p-2 hover:bg-white/5 rounded-full text-white/40 transition-colors"><X size={20} /></button>
             </div>
-            <div className="space-y-6">
-              <div>
-                <label className="text-white/40 text-xs font-bold uppercase tracking-widest mb-3 block">ক্বারী নির্বাচন করুন</label>
-                <div className="flex flex-col space-y-2">
-                  {RECITERS.map((qari) => (
-                    <button key={qari.id} onClick={() => { setSelectedQari(qari.id); setIsMenuOpen(false); }} className={`flex items-center space-x-3 p-3 rounded-xl transition-all ${selectedQari === qari.id ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}><User size={16} /><span className="font-medium text-sm">{qari.name}</span></button>
-                  ))}
+
+            {/* View Switching */}
+            <div className="flex-1 overflow-hidden">
+              {menuView === 'main' && (
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setMenuView('surahList')}
+                    className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <BookOpen size={18} className="text-emerald-500" />
+                      <span className="font-medium font-bengali">সকল সুরা</span>
+                    </div>
+                    <ChevronRight size={16} className="text-white/20 group-hover:text-emerald-500" />
+                  </button>
+
+                  <button
+                    onClick={() => setMenuView('qari')}
+                    className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Mic2 size={18} className="text-emerald-500" />
+                      <span className="font-medium font-bengali">ক্বারী নির্বাচন</span>
+                    </div>
+                    <ChevronRight size={16} className="text-white/20 group-hover:text-emerald-500" />
+                  </button>
+
+                  <button
+                    onClick={() => setMenuView('font')}
+                    className="w-full flex items-center justify-between p-4 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Type size={18} className="text-emerald-500" />
+                      <span className="font-medium font-bengali">ফন্ট সাইজ</span>
+                    </div>
+                    <ChevronRight size={16} className="text-white/20 group-hover:text-emerald-500" />
+                  </button>
                 </div>
-              </div>
+              )}
+
+              {menuView === 'surahList' && (
+                <div className="flex flex-col h-full overflow-hidden">
+                  <button onClick={() => setMenuView('main')} className="text-emerald-500 text-xs font-bold uppercase tracking-widest flex items-center gap-1 mb-4 hover:underline shrink-0">
+                    <ChevronLeft size={14} /> Back to Menu
+                  </button>
+                  <div className="flex-1 overflow-y-auto space-y-2 pr-2 custom-scrollbar">
+                    {Array.from({ length: 114 }, (_, i) => i + 1).map((id) => (
+                      <Link
+                        key={id}
+                        href={`/quran/${id}`}
+                        onClick={() => setIsMenuOpen(false)}
+                        className={`flex items-center space-x-3 p-3 rounded-xl transition-all ${params.id === id.toString() ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+                      >
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-black ${params.id === id.toString() ? 'bg-white/20 text-white' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                          {toBengaliNumber(id)}
+                        </div>
+                        <span className="font-medium text-sm font-bengali">{BENGALI_SURAH_NAMES[id]}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {menuView === 'qari' && (
+                <div className="space-y-6">
+                  <button onClick={() => setMenuView('main')} className="text-emerald-500 text-xs font-bold uppercase tracking-widest flex items-center gap-1 mb-4 hover:underline">
+                    <ChevronLeft size={14} /> Back to Menu
+                  </button>
+                  <div className="flex flex-col space-y-2">
+                    {RECITERS.map((qari) => (
+                      <button
+                        key={qari.id}
+                        onClick={() => { setSelectedQari(qari.id); setIsMenuOpen(false); }}
+                        className={`flex items-center space-x-3 p-3 rounded-xl transition-all ${selectedQari === qari.id ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20' : 'bg-white/5 text-white/70 hover:bg-white/10'}`}
+                      >
+                        <User size={16} /><span className="font-medium text-sm">{qari.name}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {menuView === 'font' && (
+                <div className="space-y-10">
+                  <button onClick={() => setMenuView('main')} className="text-emerald-500 text-xs font-bold uppercase tracking-widest flex items-center gap-1 mb-4 hover:underline">
+                    <ChevronLeft size={14} /> Back to Menu
+                  </button>
+
+                  {/* Arabic Size Slider */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-[10px] text-white/40 uppercase font-black tracking-widest">
+                      <span>Arabic Font</span>
+                      <span className="text-emerald-400">{arabicSize}px</span>
+                    </div>
+                    <input
+                      type="range" min="20" max="60" step="1"
+                      value={arabicSize}
+                      onChange={(e) => setArabicSize(parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    />
+                  </div>
+
+                  {/* Bengali Size Slider */}
+                  <div className="space-y-4">
+                    <div className="flex justify-between items-center text-[10px] text-white/40 uppercase font-black tracking-widest">
+                      <span>Bengali Font</span>
+                      <span className="text-emerald-400">{bengaliSize}px</span>
+                    </div>
+                    <input
+                      type="range" min="14" max="36" step="1"
+                      value={bengaliSize}
+                      onChange={(e) => setBengaliSize(parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -338,7 +519,7 @@ export default function SurahDetailPage() {
             <input
               type="range"
               min="0.1"
-              max="3"
+              max="10"
               step="0.1"
               value={scrollSpeed}
               onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
@@ -365,13 +546,13 @@ export default function SurahDetailPage() {
                       const ayahKey = `${surah.number}-${ayah.number}`;
                       const isPlaying = playingAyahKey === ayahKey;
                       return (
-                        <div key={ayahKey} id={`ayah-${surah.number}-${ayah.number}`} className={`w-full p-6 backdrop-blur-3xl rounded-2xl border flex flex-col space-y-5 shadow-xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/30' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
+                        <div key={ayahKey} data-surah={surah.number} data-ayah={ayah.number} id={`ayah-${surah.number}-${ayah.number}`} className={`w-full p-6 backdrop-blur-3xl rounded-2xl border flex flex-col space-y-5 shadow-xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/30' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
                           <div className="flex justify-between items-center">
                             <span className="text-emerald-500/60 font-bold text-[10px] bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">আয়াত {toBengaliNumber(ayah.number)}</span>
                             <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button>
                           </div>
-                          <p className="text-white text-[26px] text-right leading-[1.5] font-serif dir-rtl pr-2">{ayah.text}</p>
-                          <p className="text-emerald-100/70 text-[18px] font-bengali leading-relaxed border-t border-white/5 pt-4">{ayah.translation}</p>
+                          <p style={{ fontSize: `${arabicSize}px` }} className="text-white text-right leading-[1.5] font-serif dir-rtl pr-2">{ayah.text}</p>
+                          <p style={{ fontSize: `${bengaliSize}px` }} className="text-emerald-100/70 font-bengali leading-relaxed border-t border-white/5 pt-4">{ayah.translation}</p>
                         </div>
                       );
                     })}
@@ -398,13 +579,13 @@ export default function SurahDetailPage() {
                         const ayahKey = `${surah.number}-${ayah.number}`;
                         const isPlaying = playingAyahKey === ayahKey;
                         return (
-                          <div key={ayahKey} id={`ayah-desktop-${surah.number}-${ayah.number}`} className={`w-full p-8 backdrop-blur-3xl border rounded-3xl flex flex-col space-y-6 shadow-2xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/40' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
+                          <div key={ayahKey} data-surah={surah.number} data-ayah={ayah.number} id={`ayah-desktop-${surah.number}-${ayah.number}`} className={`w-full p-8 backdrop-blur-3xl border rounded-3xl flex flex-col space-y-6 shadow-2xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/40' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
                             <div className="flex justify-between items-center">
                               <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 font-bold">{ayah.number}</div>
                               <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-3 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={20} fill="currentColor"/> : <Play size={20} fill="currentColor"/>}</button>
                             </div>
-                            <p className="text-white text-[26px] text-right leading-[1.5] font-serif">{ayah.text}</p>
-                            <p className="text-emerald-100/70 text-[18px] font-bengali leading-relaxed border-t border-white/10 pt-6">{ayah.translation}</p>
+                            <p style={{ fontSize: `${arabicSize}px` }} className="text-white text-right leading-[1.5] font-serif">{ayah.text}</p>
+                            <p style={{ fontSize: `${bengaliSize}px` }} className="text-emerald-100/70 font-bengali leading-relaxed border-t border-white/10 pt-6">{ayah.translation}</p>
                           </div>
                         );
                       })}
@@ -424,6 +605,12 @@ export default function SurahDetailPage() {
           </div>
         )}
       </main>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.3); border-radius: 10px; }
+      `}</style>
     </div>
   );
 }
