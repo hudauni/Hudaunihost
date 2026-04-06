@@ -62,6 +62,7 @@ export default function HomePage() {
             setPlayingVideoId(videoId);
           }
         } else {
+          // If the video that was playing leaves the center area, stop it
           setPlayingVideoId(current => (current === videoId ? null : current));
         }
       });
@@ -69,6 +70,7 @@ export default function HomePage() {
 
     const observer = new IntersectionObserver(observerCallback, observerOptions);
 
+    // Observe all video card elements
     Object.values(videoElementsRef.current).forEach((el) => {
       if (el) observer.observe(el);
     });
@@ -195,7 +197,7 @@ export default function HomePage() {
                 {!isDesktop && promoVideos.map((video) => (
                   <div
                     key={video.id}
-                    ref={el => videoElementsRef.current[video.id] = el}
+                    ref={(el) => { videoElementsRef.current[video.id] = el; }}
                     data-video-id={video.youtubeId}
                     className="w-full flex-shrink-0 space-y-4 pt-8"
                   >
@@ -296,7 +298,7 @@ export default function HomePage() {
                 {isDesktop && promoVideos.map((video) => (
                   <div
                     key={video.id}
-                    ref={el => videoElementsRef.current[video.id] = el}
+                    ref={(el) => { videoElementsRef.current[video.id] = el; }}
                     data-video-id={video.youtubeId}
                     className="space-y-4 pt-10"
                   >
