@@ -199,14 +199,8 @@ export default function HomePage() {
                     key={video.id}
                     ref={(el) => { videoElementsRef.current[video.id] = el; }}
                     data-video-id={video.youtubeId}
-                    className="w-full flex-shrink-0 space-y-4 pt-8"
+                    className="w-full flex-shrink-0 space-y-1.5 pt-2"
                   >
-                    <div className="flex items-center gap-2 w-full px-4 mb-2">
-                      <div className="h-[1px] flex-1 bg-white/10"></div>
-                      <span className="text-white/30 text-[8px] font-black uppercase tracking-[0.2em]">Highlight</span>
-                      <div className="h-[1px] flex-1 bg-white/10"></div>
-                    </div>
-
                     <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black">
                       {playingVideoId === video.youtubeId ? (
                         <div className="relative w-full h-full">
@@ -237,13 +231,15 @@ export default function HomePage() {
                               <Play size={18} className="text-white fill-white ml-0.5" />
                             </div>
                           </div>
-                          <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent text-center text-white">
-                            <h4 className="text-[10px] font-bold font-bengali line-clamp-1">{video.title}</h4>
-                          </div>
                         </div>
                       )}
                     </div>
-                    <Link href={`/enroll?course=${encodeURIComponent(video.title)}`} className="w-full py-3.5 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">
+
+                    <div className="w-full text-center px-4">
+                      <h4 className="text-white font-bold font-bengali text-[13px] drop-shadow-md leading-tight">{video.title}</h4>
+                    </div>
+
+                    <Link href={`/enroll?course=${encodeURIComponent(video.title)}`} className="w-full py-3 bg-white text-black rounded-lg font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">
                       <Zap size={14} fill="currentColor" /> Enroll Now
                     </Link>
                   </div>
