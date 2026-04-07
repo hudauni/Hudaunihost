@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Lock, CheckCircle2, Play, Loader2 } from 'lucide-react';
+import { ChevronLeft, Lock, CheckCircle2, Play, Loader2, X } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -19,6 +19,10 @@ export default function LevelSyllabusPage() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [progress, setProgress] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+
+  // Modal State
+  const [showLockedModal, setShowLockedModal] = useState(false);
+  const [prevTaskTitle, setPrevTaskTitle] = useState("");
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -79,7 +83,14 @@ export default function LevelSyllabusPage() {
     return progress[prevTaskId]?.completed === true;
   };
 
-  const handleTaskClick = (task: any) => {
+  const handleTaskClick = (task: any, index: number) => {
+    const unlocked = isUnlocked(index);
+    if (!unlocked) {
+      setPrevTaskTitle(tasks[index - 1]?.title || "পূর্ববর্তী টাস্ক");
+      setShowLockedModal(true);
+      return;
+    }
+
     if (levelId === 'associate' && task.title === "নিয়মিত সদকা করা") {
       router.push('/sadaka');
     } else {
@@ -128,11 +139,10 @@ export default function LevelSyllabusPage() {
               return (
                 <button
                   key={task.id}
-                  disabled={!unlocked}
-                  onClick={() => handleTaskClick(task)}
+                  onClick={() => handleTaskClick(task, index)}
                   className={`w-[285px] py-3 px-5 rounded-full border transition-all flex items-center justify-between group relative overflow-hidden
                     bg-gradient-to-br from-[#1a472a]/70 to-[#001a1a]/90 backdrop-blur-xl border-t border-white/30 border-l border-white/20 shadow-[0_8px_15px_rgba(0,0,0,0.5),inset_0_-2px_4px_rgba(0,0,0,0.3)]
-                    ${unlocked ? 'active:scale-95 active:translate-y-1' : 'cursor-not-allowed'}
+                    ${unlocked ? 'active:scale-95 active:translate-y-1' : 'opacity-60 grayscale cursor-default'}
                   `}
                 >
                   <span className={`text-[14px] font-bold font-bengali flex-1 text-center ml-6 tracking-wide drop-shadow-md ${unlocked ? 'text-white' : 'text-white/40'}`}>
@@ -178,11 +188,10 @@ export default function LevelSyllabusPage() {
                 return (
                   <button
                     key={task.id}
-                    disabled={!unlocked}
-                    onClick={() => handleTaskClick(task)}
+                    onClick={() => handleTaskClick(task, index)}
                     className={`p-5 rounded-2xl border transition-all flex items-center justify-between text-left group
                       bg-gradient-to-br from-white/[0.08] to-transparent backdrop-blur-3xl border-t border-white/30 border-l border-white/20 shadow-[0_15px_35px_rgba(0,0,0,0.4),inset_0_-2px_6px_rgba(0,0,0,0.2)]
-                      ${unlocked ? 'hover:border-emerald-500/30 hover:-translate-y-1' : 'cursor-not-allowed'}
+                      ${unlocked ? 'hover:border-emerald-500/30 hover:-translate-y-1' : 'opacity-50 grayscale cursor-default'}
                     `}
                   >
                     <h3 className={`font-bold font-bengali text-xl drop-shadow-lg ${unlocked ? 'text-white' : 'text-gray-500'}`}>
@@ -205,6 +214,42 @@ export default function LevelSyllabusPage() {
           </div>
         </div>
       </main>
+
+      {/* --- LOCKED TASK MODAL --- */}
+      {showLockedModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md bg-black/60 animate-in fade-in duration-300">
+          <div className="bg-[#002b2b] border border-white/10 w-full max-w-md rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-emerald-500 to-red-500"></div>
+
+            <button
+              onClick={() => setShowLockedModal(false)}
+              className="absolute top-4 right-4 p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/40 transition-all"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center text-red-500 border border-red-500/20 shadow-2xl shadow-red-500/10">
+                <Lock size={40} />
+              </div>
+
+              <div className="space-y-3">
+                <h3 className="text-2xl font-black text-white font-bengali">টাস্কটি এখনো লক করা!</h3>
+                <p className="text-white/60 font-bengali leading-relaxed text-sm">
+                  দুঃখিত! এই টাস্কটি শুরু করতে হলে আপনাকে প্রথমে <span className="text-emerald-400 font-bold underline underline-offset-4">{prevTaskTitle}</span> টাস্কটির সকল ভিডিও দেখা সম্পন্ন করতে হবে।
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowLockedModal(false)}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold font-bengali transition-all shadow-lg active:scale-95 border-t border-white/20"
+              >
+                ঠিক আছে
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
