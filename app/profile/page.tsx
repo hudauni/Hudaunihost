@@ -101,7 +101,7 @@ export default function ProfilePage() {
               <ChevronLeft size={18} />
             </Link>
             <button
-              onClick={logout}
+              onClick={() => logout()}
               className="p-2.5 bg-white rounded-full text-red-600 shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] active:scale-90 active:translate-y-1 transition-all border border-white/20"
             >
               <LogOut size={18} />
@@ -211,7 +211,7 @@ export default function ProfilePage() {
                 <p className="text-emerald-400/60 font-medium">{user?.email}</p>
               </div>
               <button
-                onClick={logout}
+                onClick={() => logout()}
                 className="w-full py-4 bg-white text-black rounded-xl font-bold transition-all flex items-center justify-center gap-3
                            shadow-[0_8px_0_#cbd5e1] hover:shadow-[0_4px_0_#cbd5e1] hover:translate-y-[4px]
                            active:shadow-none active:translate-y-[8px]"

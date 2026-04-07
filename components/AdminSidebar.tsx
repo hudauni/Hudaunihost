@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 import {
   LayoutDashboard,
   BookOpen,
@@ -42,6 +43,7 @@ const menuItems = [
 
 export default function AdminSidebar() {
   const pathname = usePathname();
+  const { logout } = useAuth();
   const [isInboxOpen, setIsInboxOpen] = useState(pathname.includes('/admin/inbox'));
 
   return (
@@ -114,10 +116,13 @@ export default function AdminSidebar() {
       </nav>
 
       <div className="p-4 border-t border-white/5">
-        <Link href="/" className="flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/5 rounded-sm transition-all">
+        <button
+          onClick={() => logout('/admin/login')}
+          className="w-full flex items-center gap-3 px-4 py-3 text-red-400 hover:bg-red-400/5 rounded-sm transition-all"
+        >
           <LogOut size={20} />
           <span className="font-medium">Logout</span>
-        </Link>
+        </button>
       </div>
     </aside>
   );

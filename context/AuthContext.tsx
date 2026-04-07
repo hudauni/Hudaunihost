@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   onAuthStateChanged,
   signInWithPopup,
+  signInWithEmailAndPassword,
   signOut,
   User
 } from 'firebase/auth';
@@ -20,7 +21,8 @@ interface AuthContextType {
   userData: any | null;
   loading: boolean;
   login: () => Promise<void>;
-  logout: () => Promise<void>;
+  loginWithEmail: (email: string, pass: string) => Promise<void>;
+  logout: (redirectPath?: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,12 +60,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Separate effect for redirection to avoid re-subscribing to auth
   useEffect(() => {
-    if (!loading && !user && pathname && !pathname.startsWith('/login')) {
+    if (!loading && !user && pathname && !pathname.startsWith('/login') && !pathname.startsWith('/admin')) {
       router.push('/login');
     }
   }, [user, loading, pathname, router]);
 
   const syncUserData = async (firebaseUser: User) => {
+    // First, check if the user exists in the 'admins' collection
+    const adminRef = doc(db, "admins", firebaseUser.uid);
+    const adminSnap = await getDoc(adminRef);
+
+    if (adminSnap.exists()) {
+      return adminSnap.data();
+    }
+
+    // If not an admin, check the 'users' collection
     const userRef = doc(db, "users", firebaseUser.uid);
     const userSnap = await getDoc(userRef);
 
@@ -110,17 +121,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const logout = async () => {
+  const loginWithEmail = async (email: string, pass: string) => {
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch (error) {
+      console.error("Email login failed:", error);
+      throw error;
+    }
+  };
+
+  const logout = async (redirectPath?: string) => {
     try {
       await signOut(auth);
-      router.push('/login');
+      router.push(redirectPath || '/login');
     } catch (error) {
       console.error("Logout failed:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, userData, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, userData, loading, login, loginWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );
