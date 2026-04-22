@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, User, Mail, Hash, Award, LogOut, Loader2, CheckCircle2, History } from 'lucide-react';
+import { ChevronLeft, User, Mail, Hash, Award, LogOut, Loader2, CheckCircle2, History, BookOpen } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -154,6 +154,19 @@ export default function ProfilePage() {
                 </div>
               </div>
 
+              {/* Last Read Quran - Mobile */}
+              {userData?.lastRead && (
+                <Link href={`/quran/${userData.lastRead.surahId}#ayah-${userData.lastRead.surahId}-${userData.lastRead.ayahNum}`} className="w-[245px] p-2.5 bg-emerald-500/10 backdrop-blur-xl border-t border-white/20 border-l border-white/10 rounded-lg flex items-center gap-3 shadow-[0_8px_16px_rgba(0,0,0,0.4),inset_0_-2px_4px_rgba(0,0,0,0.2)] hover:bg-emerald-500/20 transition-all group">
+                  <div className="p-1.5 bg-white/5 rounded-md text-emerald-400 shadow-inner group-hover:scale-110 transition-transform"><BookOpen size={14} /></div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-white/60 text-[10px] uppercase font-bold tracking-widest">Last Read (Quran)</p>
+                    <p className="text-white font-bold text-[11px] truncate font-bengali">
+                      {userData.lastRead.surahName} (আয়াত {userData.lastRead.ayahNum})
+                    </p>
+                  </div>
+                </Link>
+              )}
+
               {/* Progress Card - Based on individual videos */}
               <div className="w-[245px] p-4 bg-gradient-to-br from-[#1a472a]/60 to-[#001a1a]/60 backdrop-blur-xl border-t border-white/20 border-l border-white/10 rounded-lg relative overflow-hidden shadow-[0_15px_30px_rgba(0,0,0,0.5),inset_0_-2px_6px_rgba(0,0,0,0.3)]">
                 <div className="relative z-10">
@@ -229,12 +242,23 @@ export default function ProfilePage() {
                   </p>
                   <p className="text-white font-black text-3xl tracking-[0.2em] drop-shadow-lg group-hover:text-emerald-400 transition-colors">{userData?.associateId}</p>
                 </div>
-                <div className="p-6 bg-white/[0.03] border-t border-white/10 border-l border-white/5 rounded-xl shadow-xl hover:bg-white/[0.05] transition-colors group">
-                  <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <Award size={14} className="text-emerald-400" /> Current Rank
-                  </p>
-                  <p className="text-emerald-400 font-black text-3xl italic uppercase tracking-tighter drop-shadow-lg">{userData?.role}</p>
-                </div>
+                {userData?.lastRead ? (
+                  <Link href={`/quran/${userData.lastRead.surahId}#ayah-${userData.lastRead.surahId}-${userData.lastRead.ayahNum}`} className="p-6 bg-emerald-500/5 border-t border-white/10 border-l border-white/5 rounded-xl shadow-xl hover:bg-emerald-500/10 transition-all group cursor-pointer">
+                    <p className="text-emerald-400/60 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <BookOpen size={14} /> Last Read Quran
+                    </p>
+                    <p className="text-white font-black text-2xl font-bengali group-hover:text-emerald-400 transition-colors">
+                      {userData.lastRead.surahName} (আয়াত {userData.lastRead.ayahNum})
+                    </p>
+                  </Link>
+                ) : (
+                  <div className="p-6 bg-white/[0.03] border-t border-white/10 border-l border-white/5 rounded-xl shadow-xl hover:bg-white/[0.05] transition-colors group">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
+                      <Award size={14} className="text-emerald-400" /> Current Rank
+                    </p>
+                    <p className="text-emerald-400 font-black text-3xl italic uppercase tracking-tighter drop-shadow-lg">{userData?.role}</p>
+                  </div>
+                )}
               </div>
 
               <div className="p-8 bg-emerald-500/5 border-t border-white/10 border-l border-white/5 rounded-xl relative overflow-hidden shadow-2xl">

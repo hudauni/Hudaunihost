@@ -12,6 +12,7 @@ import { auth, googleProvider, db } from '@/lib/firebase';
 import {
   doc,
   getDoc,
+  onSnapshot,
   runTransaction
 } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
@@ -19,6 +20,7 @@ import { useRouter, usePathname } from 'next/navigation';
 interface AuthContextType {
   user: User | null;
   userData: any | null;
+  userCollection: 'users' | 'admins';
   loading: boolean;
   login: () => Promise<void>;
   loginWithEmail: (email: string, pass: string) => Promise<void>;
@@ -30,20 +32,43 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<any | null>(null);
+  const [userCollection, setUserCollection] = useState<'users' | 'admins'>('users');
   const [loading, setLoading] = useState(true);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+    let unsubscribeUserDoc: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
           setUser(firebaseUser);
-          const data = await syncUserData(firebaseUser);
-          setUserData(data);
+
+          // Initial sync/create user if needed
+          const result = await syncUserData(firebaseUser);
+          setUserData(result.data);
+          setUserCollection(result.collection);
+
+          // Setup real-time listener for user data
+          const userRef = doc(db, result.collection, firebaseUser.uid);
+          unsubscribeUserDoc = onSnapshot(userRef, (docSnap) => {
+            if (docSnap.exists()) {
+              setUserData(docSnap.data());
+            } else {
+              setUserData(null);
+            }
+          });
+
         } else {
           setUser(null);
           setUserData(null);
+          setUserCollection('users'); // Reset to default
+          if (unsubscribeUserDoc) {
+            unsubscribeUserDoc();
+            unsubscribeUserDoc = null;
+          }
+
           if (pathname && !pathname.startsWith('/login') && !pathname.startsWith('/admin')) {
              router.push('/login');
           }
@@ -55,34 +80,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => unsubscribe();
-  }, []); // Only run once on mount
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUserDoc) unsubscribeUserDoc();
+    };
+  }, []);
 
-  // Separate effect for redirection to avoid re-subscribing to auth
   useEffect(() => {
     if (!loading && !user && pathname && !pathname.startsWith('/login') && !pathname.startsWith('/admin')) {
       router.push('/login');
     }
   }, [user, loading, pathname, router]);
 
-  const syncUserData = async (firebaseUser: User) => {
-    // First, check if the user exists in the 'admins' collection
+  const syncUserData = async (firebaseUser: User): Promise<{data: any, collection: 'users' | 'admins'}> => {
     const adminRef = doc(db, "admins", firebaseUser.uid);
     const adminSnap = await getDoc(adminRef);
 
     if (adminSnap.exists()) {
-      return adminSnap.data();
+      return { data: adminSnap.data(), collection: 'admins' };
     }
 
-    // If not an admin, check the 'users' collection
     const userRef = doc(db, "users", firebaseUser.uid);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
-      return userSnap.data();
+      return { data: userSnap.data(), collection: 'users' };
     } else {
       try {
-        return await runTransaction(db, async (transaction) => {
+        const newData = await runTransaction(db, async (transaction) => {
           const counterRef = doc(db, "counters", "users");
           const counterSnap = await transaction.get(counterRef);
 
@@ -94,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const data = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
+            displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
             photoURL: firebaseUser.photoURL,
             role: 'associate',
             associateId: nextId,
@@ -106,9 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
           return data;
         });
+        return { data: newData, collection: 'users' };
       } catch (error) {
         console.error("Transaction failed: ", error);
-        return null;
+        return { data: null, collection: 'users' };
       }
     }
   };
@@ -140,7 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userData, loading, login, loginWithEmail, logout }}>
+    <AuthContext.Provider value={{ user, userData, userCollection, loading, login, loginWithEmail, logout }}>
       {children}
     </AuthContext.Provider>
   );

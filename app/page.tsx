@@ -3,13 +3,13 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Play, Loader2, User, Zap } from 'lucide-react';
+import { Play, Loader2, User, Zap, Bell } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import AssociateId from '@/components/AssociateId';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, orderBy, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, getDocs, where, onSnapshot } from 'firebase/firestore';
 import { getCache, setCache } from '@/lib/cache';
 
 // Lazy load heavy components
@@ -26,7 +26,32 @@ export default function HomePage() {
   const [dataLoading, setDataLoading] = useState(true);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Listen for unread notifications
+    const q = query(
+      collection(db, "notifications"),
+      where("recipientId", "in", [user.uid, "all"])
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const lastRead = userData?.lastReadNotifications?.toDate() || new Date(0);
+
+      const unread = snapshot.docs.filter(doc => {
+        const data = doc.data();
+        const createdAt = data.createdAt?.toDate();
+        return createdAt > lastRead;
+      });
+
+      setUnreadCount(unread.length);
+    });
+
+    return () => unsubscribe();
+  }, [user, userData]);
 
   // Refs for Autoplay Logic
   const videoElementsRef = useRef<{[key: string]: HTMLDivElement | null}>({});
@@ -150,13 +175,27 @@ export default function HomePage() {
             backgroundPosition: "center",
           }}
         >
-          {/* Profile Icon */}
-          <Link
-            href="/profile"
-            className="absolute top-6 right-6 p-2.5 bg-gradient-to-br from-[#d4af37] via-[#f9d71c] to-[#b8860b] rounded-full shadow-2xl z-50 active:scale-90 transition-all"
-          >
-            <User size={20} className="text-[#1a472a] stroke-[3]" />
-          </Link>
+          {/* Header Action Buttons */}
+          <div className="absolute top-6 right-6 flex items-center gap-3 z-50">
+            {/* Notification Icon */}
+            <Link
+              href="/notifications"
+              className="relative p-2.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl active:scale-90 transition-all"
+            >
+              <Bell size={20} className="text-white" />
+              {unreadCount > 0 && (
+                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#002b2b] animate-pulse"></span>
+              )}
+            </Link>
+
+            {/* Profile Icon */}
+            <Link
+              href="/profile"
+              className="p-2.5 bg-gradient-to-br from-[#d4af37] via-[#f9d71c] to-[#b8860b] rounded-full shadow-2xl active:scale-90 transition-all"
+            >
+              <User size={20} className="text-[#1a472a] stroke-[3]" />
+            </Link>
+          </div>
 
           <div className="w-full max-w-[360px] flex flex-col items-center z-10 px-4">
             <div className="flex flex-col items-center pt-[90px] text-center space-y-1">
@@ -171,7 +210,7 @@ export default function HomePage() {
               )}
               <div className="mt-3">
                 <p className="text-white/90 text-[11px] font-medium font-bengali leading-relaxed">
-                  আসসালামু আলাইকুম {userData?.displayName}!<br />
+                  আসসালামু আলাইকুম {userData?.displayName || user?.displayName || user?.email?.split('@')[0]}!<br />
                   আপনার অ্যাসোসিয়েট আইডি - <AssociateId className="text-cyan-300 font-bold" />
                 </p>
               </div>

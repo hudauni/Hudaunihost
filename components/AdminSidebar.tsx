@@ -17,12 +17,18 @@ import {
   Inbox,
   Home,
   ChevronDown,
-  CircleDot
+  CircleDot,
+  ShoppingBag,
+  Package,
+  Bell
 } from 'lucide-react';
 
 const menuItems = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { name: 'Home Page', href: '/admin/home', icon: Home },
+  { name: 'প্রোডাক্ট', href: '/admin/shop', icon: ShoppingBag },
+  { name: 'অর্ডারসমূহ', href: '/admin/orders', icon: Package },
+  { name: 'কোর্সসমূহ', href: '/admin/courses', icon: Video },
   {
     name: 'Inbox',
     href: '#',
@@ -38,6 +44,7 @@ const menuItems = [
   { name: 'মেম্বারশিপ ম্যানেজমেন্ট', href: '/admin/membership', icon: Award },
   { name: 'আল কুরআন', href: '/admin/quran', icon: BookOpen },
   { name: 'Users', href: '/admin/users', icon: Users },
+  { name: 'নোটিফিকেশন', href: '/admin/notifications', icon: Bell },
   { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 

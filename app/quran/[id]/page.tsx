@@ -7,7 +7,7 @@ import { ChevronLeft, Search, X, ArrowRight, MoreVertical, Play, Pause, User, Ch
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface Ayah {
   number: number;
@@ -49,11 +49,13 @@ const BENGALI_SURAH_NAMES: Record<number, string> = {
 export default function SurahDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userCollection } = useAuth();
   const [loadedSurahs, setSurahs] = useState<SurahData[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextSurahId, setNextSurahId] = useState<number | null>(null);
+  const [prevSurahId, setPrevSurahId] = useState<number | null>(null);
   const [isFetchingNext, setIsFetchingNext] = useState(false);
+  const [isFetchingPrev, setIsFetchingPrev] = useState(false);
 
   // UI States
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -78,10 +80,14 @@ export default function SurahDetailPage() {
   // Auto-Scroll States
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1);
+  const [activeSurahId, setActiveSurahId] = useState<number>(Number(params.id));
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const observer = useRef<IntersectionObserver | null>(null);
+  const prevObserver = useRef<IntersectionObserver | null>(null);
   const progressObserver = useRef<IntersectionObserver | null>(null);
+  const autoSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastSavedRef = useRef<{sId: number, aId: number} | null>(null);
   const scrollAccumulatorRef = useRef<number>(0);
 
   const toBengaliNumber = (num: number) => {
@@ -195,14 +201,14 @@ export default function SurahDetailPage() {
     if (!user || !current) return;
     setIsSaving(true);
     try {
-      await updateDoc(doc(db, "users", user.uid), {
+      await setDoc(doc(db, userCollection, user.uid), {
         lastRead: {
           surahId: current.sId,
           ayahNum: current.aId,
           timestamp: serverTimestamp(),
           surahName: BENGALI_SURAH_NAMES[current.sId]
         }
-      });
+      }, { merge: true });
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 3000);
     } catch (err) {
@@ -237,6 +243,34 @@ export default function SurahDetailPage() {
     } catch (err) { console.error(err); } finally { setIsFetchingNext(false); }
   }, [nextSurahId, isFetchingNext, loading, selectedQari]);
 
+  const loadPrevSurah = useCallback(async () => {
+    if (!prevSurahId || isFetchingPrev || loading) return;
+    setIsFetchingPrev(true);
+
+    // Save current scroll and height
+    const currentScroll = window.scrollY;
+    const currentHeight = document.documentElement.scrollHeight;
+
+    try {
+      const data = await fetchSurahData(prevSurahId, selectedQari);
+
+      // Update state
+      setSurahs(prev => [data, ...prev]);
+      setPrevSurahId(data.number > 1 ? data.number - 1 : null);
+
+      // Adjust scroll position after state update
+      requestAnimationFrame(() => {
+        const newHeight = document.documentElement.scrollHeight;
+        const heightDiff = newHeight - currentHeight;
+        window.scrollTo(0, currentScroll + heightDiff);
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsFetchingPrev(false);
+    }
+  }, [prevSurahId, isFetchingPrev, loading, selectedQari]);
+
   const loaderRef = useCallback((node: HTMLDivElement | null) => {
     if (loading) return;
     if (observer.current) observer.current.disconnect();
@@ -245,6 +279,15 @@ export default function SurahDetailPage() {
     }, { rootMargin: '800px' });
     if (node) observer.current.observe(node);
   }, [loading, nextSurahId, isFetchingNext, loadNextSurah]);
+
+  const prevLoaderRef = useCallback((node: HTMLDivElement | null) => {
+    if (loading) return;
+    if (prevObserver.current) prevObserver.current.disconnect();
+    prevObserver.current = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting && prevSurahId && !isFetchingPrev) loadPrevSurah();
+    }, { rootMargin: '800px' });
+    if (node) prevObserver.current.observe(node);
+  }, [loading, prevSurahId, isFetchingPrev, loadPrevSurah]);
 
   // Track Centered Ayah using Ref (Optimized for Fast Scrolling)
   useEffect(() => {
@@ -258,8 +301,35 @@ export default function SurahDetailPage() {
           const sId = entry.target.getAttribute('data-surah');
           const aId = entry.target.getAttribute('data-ayah');
           if (sId && aId) {
+            const sIdNum = parseInt(sId);
+            const aIdNum = parseInt(aId);
             // Update Ref ONLY - NO Re-render during scroll
-            currentVisibleAyahRef.current = { sId: parseInt(sId), aId: parseInt(aId) };
+            currentVisibleAyahRef.current = { sId: sIdNum, aId: aIdNum };
+            setActiveSurahId(sIdNum);
+
+            // --- AUTO-SAVE PROGRESS ---
+            if (user) {
+              if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+              autoSaveTimeoutRef.current = setTimeout(async () => {
+                const current = currentVisibleAyahRef.current;
+                if (current && (!lastSavedRef.current || lastSavedRef.current.sId !== current.sId || lastSavedRef.current.aId !== current.aId)) {
+                  try {
+                    await setDoc(doc(db, userCollection, user.uid), {
+                      lastRead: {
+                        surahId: current.sId,
+                        ayahNum: current.aId,
+                        timestamp: serverTimestamp(),
+                        surahName: BENGALI_SURAH_NAMES[current.sId] || "আল কুরআন"
+                      }
+                    }, { merge: true });
+                    lastSavedRef.current = { ...current };
+                    console.log(`Auto-saved progress: Surah ${current.sId}, Ayah ${current.aId}`);
+                  } catch (err) {
+                    console.error("Auto-save error:", err);
+                  }
+                }
+              }, 4000); // Save after 4 seconds of staying on an ayah
+            }
           }
         }
       });
@@ -268,8 +338,11 @@ export default function SurahDetailPage() {
     const elements = document.querySelectorAll('[data-ayah]');
     elements.forEach(el => progressObserver.current?.observe(el));
 
-    return () => progressObserver.current?.disconnect();
-  }, [loadedSurahs]);
+    return () => {
+      progressObserver.current?.disconnect();
+      if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
+    };
+  }, [loadedSurahs, user, userCollection]);
 
   // Handle Auto-Scrolling Effect
   useEffect(() => {
@@ -309,7 +382,9 @@ export default function SurahDetailPage() {
         const data = await fetchSurahData(params.id as string, selectedQari);
         if (isMounted) {
           setSurahs([data]);
+          setActiveSurahId(data.number);
           setNextSurahId(data.number < 114 ? data.number + 1 : null);
+          setPrevSurahId(data.number > 1 ? data.number - 1 : null);
           checkDownloadStatus(params.id as string);
 
           // Small delay for rendering before scroll
@@ -336,7 +411,7 @@ export default function SurahDetailPage() {
         <div className="w-full max-w-4xl flex justify-between items-center">
           <Link href="/quran" className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-colors"><ChevronLeft size={20} /></Link>
           <div className="flex flex-col items-center">
-            <h1 className="text-emerald-400 font-bold font-bengali text-sm lg:text-base">{BENGALI_SURAH_NAMES[Number(params.id)] || "আল কুরআন"}</h1>
+            <h1 className="text-emerald-400 font-bold font-bengali text-sm lg:text-base">{BENGALI_SURAH_NAMES[activeSurahId] || "আল কুরআন"}</h1>
             {isDownloaded ? <div className="flex items-center space-x-1 text-[8px] text-emerald-500 font-bold uppercase tracking-tighter"><CheckCircle2 size={8}/><span>Downloaded</span></div> : <div className="flex items-center space-x-1 text-[8px] text-white/20 font-bold uppercase tracking-tighter"><AlertCircle size={8}/><span>Not Downloaded</span></div>}
           </div>
           <div className="flex items-center space-x-2">
@@ -530,6 +605,18 @@ export default function SurahDetailPage() {
       )}
 
       <main className="flex-1 w-full flex flex-col items-center pt-[65px] lg:pt-[138px]">
+        {/* Top Loader for Bi-directional Infinite Scroll */}
+        {!loading && prevSurahId && (
+          <div ref={prevLoaderRef} className="w-full py-10 flex justify-center h-20">
+            {isFetchingPrev && (
+              <div className="flex flex-col items-center space-y-2">
+                <Loader2 size={24} className="animate-spin text-emerald-500" />
+                <span className="text-emerald-500/60 text-[10px] font-bengali">পূর্ববর্তী সুরা লোড হচ্ছে...</span>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* --- MOBILE VERSION --- */}
         <div className="lg:hidden w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-[#002b2b] via-[#001a1a] to-[#000d0d] pb-10">
           {loading ? ( <div className="flex justify-center pt-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div></div> ) : (

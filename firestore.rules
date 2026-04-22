@@ -79,6 +79,24 @@ service cloud.firestore {
     match /courseRequests/{document} {
       allow read, write: if request.auth != null;
     }
+
+    // ৯. কোর্সসমূহ (পাবলিকলি রিড এবং এডমিন রাইট)
+    match /courses/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // ১০. শপ প্রোডাক্ট (পাবলিকলি রিড এবং এডমিন রাইট)
+    match /shopProducts/{document} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+
+    // ১২. নোটিফিকেশনস
+    match /notifications/{document} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
+    }
     
     // অন্য সব কিছুর জন্য ডিফল্ট সিকিউরিটি
     match /{document=**} {
