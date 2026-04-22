@@ -110,7 +110,7 @@ export default function CoursesPage() {
                         বিস্তারিত
                       </button>
                       <button
-                        onClick={() => handleEnroll(course.id)}
+                        onClick={() => handleEnroll(course)}
                         className="flex items-center justify-center gap-2 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold font-bengali text-sm transition-all shadow-lg shadow-emerald-600/20"
                       >
                         ভর্তি হন
@@ -182,7 +182,7 @@ export default function CoursesPage() {
                           বিস্তারিত
                         </button>
                         <button
-                          onClick={() => handleEnroll(course.id)}
+                          onClick={() => handleEnroll(course)}
                           className="flex items-center justify-center gap-2 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold font-bengali transition-all shadow-xl shadow-emerald-600/20"
                         >
                           ভর্তি হন
@@ -240,7 +240,7 @@ export default function CoursesPage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => handleEnroll(selectedCourse.id)}
+                      onClick={() => handleEnroll(selectedCourse)}
                       className="w-full lg:w-auto px-12 py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black font-bengali text-xl transition-all shadow-2xl shadow-emerald-600/30"
                     >
                       ভর্তি হতে ক্লিক করুন
