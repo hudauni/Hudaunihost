@@ -15,7 +15,7 @@ import {
   serverTimestamp,
   orderBy
 } from 'firebase/firestore';
-import { Plus, Trash2, Edit, Save, X, PlayCircle, Users, Search, CheckCircle, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit, Save, X, PlayCircle, Users, Search, CheckCircle, Loader2, AlertCircle, Check } from 'lucide-react';
 
 interface ClassItem {
   title: string;
@@ -27,12 +27,15 @@ interface PaidCourse {
   title: string;
   classes: ClassItem[];
   createdAt: any;
+  studentCount?: number;
 }
 
 export default function PaidCoursesAdmin() {
   const [courses, setCourses] = useState<PaidCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editCourseId, setEditCourseId] = useState<string | null>(null);
 
   // New Course State
   const [newCourseTitle, setNewCourseTitle] = useState('');
@@ -43,6 +46,12 @@ export default function PaidCoursesAdmin() {
   const [foundUser, setFoundUser] = useState<any>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState('');
+  const [toast, setToast] = useState<{ message: string, type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   useEffect(() => {
     fetchCourses();
@@ -52,7 +61,21 @@ export default function PaidCoursesAdmin() {
     try {
       const q = query(collection(db, "paidCourses"), orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
-      const list = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as PaidCourse));
+
+      const listPromises = snapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        // Fetch student count for this course
+        const studentQuery = query(collection(db, "userPaidCourses"), where("courseId", "==", doc.id));
+        const studentSnap = await getDocs(studentQuery);
+
+        return {
+          id: doc.id,
+          ...data,
+          studentCount: studentSnap.size
+        } as PaidCourse;
+      });
+
+      const list = await Promise.all(listPromises);
       setCourses(list);
     } catch (e) {
       console.error(e);
@@ -77,35 +100,60 @@ export default function PaidCoursesAdmin() {
 
   const handleSaveCourse = async () => {
     if (!newCourseTitle || newClasses.some(c => !c.title || !c.youtubeId)) {
-      alert("Please fill all fields");
+      showToast("সবগুলো ঘর পূরণ করুন", "error");
       return;
     }
 
     setLoading(true);
     try {
-      await addDoc(collection(db, "paidCourses"), {
-        title: newCourseTitle,
-        classes: newClasses,
-        createdAt: serverTimestamp()
-      });
+      if (isEditing && editCourseId) {
+        await updateDoc(doc(db, "paidCourses", editCourseId), {
+          title: newCourseTitle,
+          classes: newClasses,
+          updatedAt: serverTimestamp()
+        });
+        showToast("কোর্সটি সফলভাবে আপডেট করা হয়েছে");
+      } else {
+        await addDoc(collection(db, "paidCourses"), {
+          title: newCourseTitle,
+          classes: newClasses,
+          createdAt: serverTimestamp()
+        });
+        showToast("নতুন কোর্স সফলভাবে তৈরি করা হয়েছে");
+      }
+
       setIsAdding(false);
+      setIsEditing(false);
+      setEditCourseId(null);
       setNewCourseTitle('');
       setNewClasses([{ title: '', youtubeId: '' }]);
       fetchCourses();
     } catch (e) {
       console.error(e);
+      showToast("সমস্যা হয়েছে, পুনরায় চেষ্টা করুন", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  const handleEditClick = (course: PaidCourse) => {
+    setNewCourseTitle(course.title);
+    setNewClasses(course.classes || [{ title: '', youtubeId: '' }]);
+    setEditCourseId(course.id);
+    setIsEditing(true);
+    setIsAdding(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleDeleteCourse = async (id: string) => {
-    if (!confirm("Are you sure?")) return;
+    if (!confirm("আপনি কি নিশ্চিতভাবে এই কোর্সটি ডিলিট করতে চান?")) return;
     try {
       await deleteDoc(doc(db, "paidCourses", id));
+      showToast("কোর্সটি ডিলিট করা হয়েছে");
       fetchCourses();
     } catch (e) {
       console.error(e);
+      showToast("ডিলিট করতে সমস্যা হয়েছে", "error");
     }
   };
 
@@ -148,7 +196,7 @@ export default function PaidCoursesAdmin() {
       );
       const snap = await getDocs(q);
       if (!snap.empty) {
-        alert("User already has access to this course");
+        showToast("ইউজার অলরেডি এই কোর্সের এক্সেস পেয়েছে", "error");
         return;
       }
 
@@ -157,23 +205,48 @@ export default function PaidCoursesAdmin() {
         courseId: selectedCourseId,
         grantedAt: serverTimestamp()
       });
-      alert("Access granted successfully!");
+      showToast("সফলভাবে এক্সেস দেওয়া হয়েছে");
       setFoundUser(null);
       setSearchQuery('');
     } catch (e) {
       console.error(e);
+      showToast("এক্সেস দিতে সমস্যা হয়েছে", "error");
     }
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
+      {/* Custom Toast Notification */}
+      {toast && (
+        <div className="fixed top-10 right-10 z-[100] animate-in fade-in slide-in-from-right-4 duration-300">
+          <div className={`flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border ${
+            toast.type === 'success'
+              ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+              : 'bg-red-500/10 border-red-500/20 text-red-400'
+          }`}>
+            {toast.type === 'success' ? <Check size={20} /> : <AlertCircle size={20} />}
+            <p className="font-bold font-bengali text-sm">{toast.message}</p>
+          </div>
+        </div>
+      )}
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-white font-bengali">পেইড কোর্স ম্যানেজমেন্ট</h1>
           <p className="text-white/60">এখানে নতুন পেইড কোর্স তৈরি করুন এবং স্টুডেন্টদের এক্সেস দিন।</p>
         </div>
         <button
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => {
+            if (isAdding) {
+              setIsAdding(false);
+              setIsEditing(false);
+              setEditCourseId(null);
+              setNewCourseTitle('');
+              setNewClasses([{ title: '', youtubeId: '' }]);
+            } else {
+              setIsAdding(true);
+            }
+          }}
           className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg flex items-center gap-2 font-bold transition-all"
         >
           {isAdding ? <X size={20} /> : <Plus size={20} />}
@@ -190,7 +263,7 @@ export default function PaidCoursesAdmin() {
           <div className="flex-1 relative">
             <input
               type="text"
-              placeholder="Associate ID অথবা Email দিয়ে সার্চ করুন"
+              placeholder="Email দিয়ে সার্চ করুন"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:border-emerald-500/50"
@@ -242,7 +315,9 @@ export default function PaidCoursesAdmin() {
       {isAdding && (
         <div className="bg-white/5 p-8 rounded-2xl border border-white/10 space-y-6 animate-in fade-in slide-in-from-top-4 duration-300">
           <div className="space-y-2">
-            <label className="text-white/60 text-sm font-bold uppercase tracking-widest">কোর্স টাইটেল</label>
+            <label className="text-white/60 text-sm font-bold uppercase tracking-widest">
+              {isEditing ? 'এডিট কোর্স টাইটেল' : 'কোর্স টাইটেল'}
+            </label>
             <input
               type="text"
               placeholder="কোর্সের নাম দিন"
@@ -301,7 +376,7 @@ export default function PaidCoursesAdmin() {
             className="w-full bg-emerald-500 hover:bg-emerald-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-emerald-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 size={24} className="animate-spin" /> : <Save size={24} />}
-            কোর্স সেভ করুন
+            {isEditing ? 'কোর্স আপডেট করুন' : 'কোর্স সেভ করুন'}
           </button>
         </div>
       )}
@@ -317,25 +392,32 @@ export default function PaidCoursesAdmin() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-white font-bengali">{course.title}</h3>
-                  <p className="text-white/40 text-sm">{course.classes?.length || 0} Classes</p>
+                  <div className="flex items-center gap-3 mt-1">
+                    <p className="text-white/40 text-xs font-bold uppercase tracking-wider">{course.classes?.length || 0} Classes</p>
+                    <div className="w-1 h-1 bg-white/10 rounded-full"></div>
+                    <p className="text-emerald-400/60 text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                      <Users size={12} /> {course.studentCount || 0} Students
+                    </p>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => handleDeleteCourse(course.id)}
-                className="p-2 text-white/20 hover:text-red-400 transition-colors"
-              >
-                <Trash2 size={20} />
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleEditClick(course)}
+                  className="p-2 text-white/20 hover:text-emerald-400 transition-colors"
+                >
+                  <Edit size={20} />
+                </button>
+                <button
+                  onClick={() => handleDeleteCourse(course.id)}
+                  className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 size={20} />
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-              {course.classes?.map((cls, idx) => (
-                <div key={idx} className="text-white/60 text-sm flex items-center gap-2 bg-white/5 p-2 rounded-lg">
-                  <span className="text-emerald-400 font-bold">{idx + 1}.</span>
-                  <span className="truncate">{cls.title}</span>
-                </div>
-              ))}
-            </div>
+            {/* Class list removed as per request */}
           </div>
         ))}
       </div>
