@@ -89,7 +89,19 @@ service cloud.firestore {
     // ১০. শপ প্রোডাক্ট (পাবলিকলি রিড এবং এডমিন রাইট)
     match /shopProducts/{document} {
       allow read: if true;
-      allow write: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // ১১. পেইড কোর্স সিস্টেম
+    match /paidCourses/{courseId} {
+      // শুধু এক্সেস থাকলে বা এডমিন হলে রিড করা যাবে
+      allow read: if request.auth != null && (exists(/databases/$(database)/documents/userPaidCourses/$(request.auth.uid + "_" + courseId)) || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    match /userPaidCourses/{document} {
+      allow read: if request.auth != null && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if isAdmin();
     }
 
     // ১২. নোটিফিকেশনস

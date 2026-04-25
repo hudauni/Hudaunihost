@@ -28,6 +28,7 @@ const menuItems = [
   { name: 'Home Page', href: '/admin/home', icon: Home },
   { name: 'প্রোডাক্ট', href: '/admin/shop', icon: ShoppingBag },
   { name: 'অর্ডারসমূহ', href: '/admin/orders', icon: Package },
+  { name: 'পেইড কোর্স', href: '/admin/paid-courses', icon: Video },
   { name: 'কোর্সসমূহ', href: '/admin/courses', icon: Video },
   {
     name: 'Inbox',
