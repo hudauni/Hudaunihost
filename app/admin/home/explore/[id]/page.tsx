@@ -27,7 +27,7 @@ export default function AdminExploreManagement() {
   const [isEditingContent, setIsEditingContent] = useState(false);
   const [contentId, setContentId] = useState<string | null>(null);
   const [videoTitle, setVideoTitle] = useState("");
-  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [videos, setVideos] = useState<{title: string, youtubeId: string}[]>([{title: '', youtubeId: ''}]);
   const [details, setDetails] = useState("");
   const [enrollText, setEnrollText] = useState("Enroll Now");
   const [enrollUrl, setEnrollUrl] = useState("");
@@ -92,25 +92,51 @@ export default function AdminExploreManagement() {
   const handleEditContent = (item: any) => {
     setContentId(item.id);
     setVideoTitle(item.videoTitle || item.title);
-    setYoutubeUrl(item.youtubeId ? `https://youtube.com/watch?v=${item.youtubeId}` : "");
+
+    // Convert old single video to new array format if needed, or use existing array
+    if (item.videos && Array.isArray(item.videos)) {
+      setVideos(item.videos);
+    } else if (item.youtubeId) {
+      setVideos([{ title: 'Main Video', youtubeId: item.youtubeId }]);
+    } else {
+      setVideos([{ title: '', youtubeId: '' }]);
+    }
+
     setDetails(item.details || "");
     setEnrollText(item.enrollText || "Enroll Now");
     setEnrollUrl(item.enrollUrl || "");
     setIsEditingContent(true);
   };
 
+  const handleAddVideoField = () => {
+    setVideos([...videos, { title: '', youtubeId: '' }]);
+  };
+
+  const handleRemoveVideoField = (index: number) => {
+    setVideos(videos.filter((_, i) => i !== index));
+  };
+
+  const handleVideoChange = (index: number, field: string, value: string) => {
+    const updated = [...videos];
+    if (field === 'youtubeId') {
+      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+      const match = value.match(regExp);
+      const videoId = (match && match[2].length === 11) ? match[2] : value;
+      updated[index] = { ...updated[index], youtubeId: videoId };
+    } else {
+      updated[index] = { ...updated[index], title: value };
+    }
+    setVideos(updated);
+  };
+
   const handleSaveContent = async () => {
     if (!contentId) return;
     setSubmitting(true);
 
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = youtubeUrl.match(regExp);
-    const videoId = (match && match[2].length === 11) ? match[2] : null;
-
     try {
       await updateDoc(doc(db, "exploreMenu", contentId), {
         videoTitle,
-        youtubeId: videoId,
+        videos: videos.filter(v => v.youtubeId), // Save only valid videos
         details,
         enrollText,
         enrollUrl,
@@ -199,29 +225,50 @@ export default function AdminExploreManagement() {
                 <button onClick={() => setIsEditingContent(false)} className="text-white/20 hover:text-white">বন্ধ করুন</button>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
                   <label className="text-white/40 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                    <Info size={12} /> ভিডিও টাইটেল
+                    <PlayCircle size={12} /> ভিডিওসমূহ (Multiple Videos)
                   </label>
-                  <input
-                    type="text"
-                    value={videoTitle}
-                    onChange={(e) => setVideoTitle(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali"
-                  />
+                  <button
+                    onClick={handleAddVideoField}
+                    className="text-emerald-400 hover:text-emerald-300 text-[10px] font-bold uppercase border border-emerald-500/20 px-2 py-1 rounded"
+                  >
+                    + ভিডিও যোগ করুন
+                  </button>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-white/40 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-                    <PlayCircle size={12} /> ইউটিউব লিংক
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    value={youtubeUrl}
-                    onChange={(e) => setYoutubeUrl(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50"
-                  />
+
+                <div className="space-y-3">
+                  {videos.map((v, idx) => (
+                    <div key={idx} className="flex gap-3 items-end bg-black/20 p-3 rounded-sm border border-white/5">
+                      <div className="flex-1 space-y-1">
+                        <p className="text-[9px] text-white/20 font-bold uppercase">Video Title</p>
+                        <input
+                          type="text"
+                          value={v.title}
+                          placeholder={`Video ${idx + 1} Title`}
+                          onChange={(e) => handleVideoChange(idx, 'title', e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-sm px-3 py-2 text-white text-xs outline-none focus:border-emerald-500/50 font-bengali"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <p className="text-[9px] text-white/20 font-bold uppercase">YouTube Link/ID</p>
+                        <input
+                          type="text"
+                          value={v.youtubeId}
+                          placeholder="Link or ID"
+                          onChange={(e) => handleVideoChange(idx, 'youtubeId', e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-sm px-3 py-2 text-white text-xs outline-none focus:border-emerald-500/50"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleRemoveVideoField(idx)}
+                        className="p-2 text-red-500/40 hover:text-red-500 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </div>
 
