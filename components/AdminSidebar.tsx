@@ -36,6 +36,7 @@ const menuItems = [
     icon: Inbox,
     subItems: [
       { name: 'Course Requests', href: '/admin/inbox/course' },
+      { name: 'Service Requests', href: '/admin/inbox/service' },
       { name: 'Sadaka Requests', href: '/admin/inbox/sadaka' },
     ]
   },

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { db } from '@/lib/firebase';
 import {
   collection, addDoc, getDocs, deleteDoc, doc,
@@ -18,9 +19,11 @@ export default function AdminHomeManagement() {
   // Button Form
   const [newTitle, setNewTitle] = useState("");
   const [newHref, setNewHref] = useState("");
+  const [newType, setNewType] = useState<'link' | 'hierarchy'>('link');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editHref, setEditHref] = useState("");
+  const [editType, setEditType] = useState<'link' | 'hierarchy'>('link');
 
   // Video Form
   const [newVTitle, setNewVTitle] = useState("");
@@ -51,14 +54,14 @@ export default function AdminHomeManagement() {
     setSubmitting(true);
     const batch = writeBatch(db);
     const defaults = [
-      { title: "আল কুরআন", href: "/quran" },
-      { title: "মেম্বার হতে চাই", href: "/membership" },
-      { title: "ইসলাম কি? কেন? কিভাবে?", href: "/what-is-islam" },
-      { title: "সাফল্যের জন্য দক্ষতা", href: "/skills" },
-      { title: "সকল সেবা", href: "/services" },
-      { title: "কাউন্সিলিং প্রয়োজন", href: "/counseling" },
-      { title: "হুদা ইউনি এর লক্ষ্য-উদ্দেশ্য", href: "/goals" },
-      { title: "সাদকা প্রদান", href: "/sadaka" },
+      { title: "আল কুরআন", href: "/quran", type: 'link' },
+      { title: "মেম্বার হতে চাই", href: "/membership", type: 'link' },
+      { title: "ইসলাম কি? কেন? কিভাবে?", href: "/what-is-islam", type: 'link' },
+      { title: "সাফল্যের জন্য দক্ষতা", href: "/skills", type: 'link' },
+      { title: "সকল সেবা", href: "/services", type: 'link' },
+      { title: "কাউন্সিলিং প্রয়োজন", href: "/counseling", type: 'link' },
+      { title: "হুদা ইউনি এর লক্ষ্য-উদ্দেশ্য", href: "/goals", type: 'link' },
+      { title: "সাদকা প্রদান", href: "/sadaka", type: 'link' },
     ];
     defaults.forEach((item, i) => {
       const ref = doc(collection(db, "homeMenu"));
@@ -75,8 +78,18 @@ export default function AdminHomeManagement() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await addDoc(collection(db, "homeMenu"), { title: newTitle, href: newHref, order: menuItems.length + 1 });
-      setNewTitle(""); setNewHref("");
+      const docRef = await addDoc(collection(db, "homeMenu"), {
+        title: newTitle,
+        href: "", // Placeholder
+        type: newType,
+        order: menuItems.length + 1
+      });
+
+      // Update with correct ID-based link for hierarchy
+      const finalHref = newType === 'link' ? newHref : `/explore/${docRef.id}`;
+      await updateDoc(docRef, { href: finalHref });
+
+      setNewTitle(""); setNewHref(""); setNewType('link');
       fetchMenu();
     } catch (e) { console.error(e); }
     finally { setSubmitting(false); }
@@ -105,7 +118,8 @@ export default function AdminHomeManagement() {
   const handleUpdate = async (id: string) => {
     await updateDoc(doc(db, "homeMenu", id), {
       title: editTitle,
-      href: editHref
+      href: editType === 'link' ? editHref : `/explore/${id}`,
+      type: editType
     });
     setEditingId(null);
     fetchMenu();
@@ -152,8 +166,37 @@ export default function AdminHomeManagement() {
                 নতুন মেনু বাটন
               </h3>
               <form onSubmit={handleAddButton} className="space-y-4">
+                <div className="flex gap-2 p-1 bg-black/20 rounded-sm mb-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewType('link')}
+                    className={`flex-1 py-2 text-[10px] font-bold rounded-sm transition-all ${newType === 'link' ? 'bg-emerald-500 text-white' : 'text-white/40'}`}
+                  >
+                    লিংক সিস্টেম
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewType('hierarchy')}
+                    className={`flex-1 py-2 text-[10px] font-bold rounded-sm transition-all ${newType === 'hierarchy' ? 'bg-emerald-500 text-white' : 'text-white/40'}`}
+                  >
+                    হায়ারার্কি সিস্টেম
+                  </button>
+                </div>
+
                 <input type="text" placeholder="বাটনের নাম" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali" />
-                <input type="text" placeholder="লিংক (যেমন: /quran)" value={newHref} onChange={(e) => setNewHref(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50" />
+
+                {newType === 'link' && (
+                  <input type="text" placeholder="লিংক (যেমন: /quran)" value={newHref} onChange={(e) => setNewHref(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50" />
+                )}
+
+                {newType === 'hierarchy' && (
+                  <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-sm">
+                    <p className="text-[10px] text-emerald-400 font-bold leading-tight">
+                      এই বাটনে ক্লিক করলে একটি সাব-পেজ ওপেন হবে যেখানে আপনি আরও বাটন যোগ করতে পারবেন।
+                    </p>
+                  </div>
+                )}
+
                 <button disabled={submitting} className="w-full bg-emerald-600 py-3.5 rounded-sm font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-50">
                   {submitting ? "সেভ হচ্ছে..." : "বাটন যোগ করুন"}
                 </button>
@@ -167,21 +210,43 @@ export default function AdminHomeManagement() {
             {menuItems.map((item, index) => (
               <div key={item.id} className="bg-white/[0.02] border border-white/5 p-4 flex items-center justify-between rounded-sm group hover:border-emerald-500/30 transition-all">
                 {editingId === item.id ? (
-                  <div className="flex-1 grid grid-cols-2 gap-2 mr-4">
-                    <input className="bg-black/60 border border-emerald-500 rounded-sm px-3 py-1 text-white text-sm font-bengali" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
-                    <input className="bg-black/60 border border-emerald-500 rounded-sm px-3 py-1 text-white text-sm" value={editHref} onChange={(e) => setEditHref(e.target.value)} />
+                  <div className="flex-1 space-y-2 mr-4">
+                    <div className="flex gap-2 p-1 bg-black/40 rounded-sm w-fit">
+                      <button type="button" onClick={() => setEditType('link')} className={`px-3 py-1 text-[9px] font-bold rounded-sm ${editType === 'link' ? 'bg-emerald-500 text-white' : 'text-white/40'}`}>Link</button>
+                      <button type="button" onClick={() => setEditType('hierarchy')} className={`px-3 py-1 text-[9px] font-bold rounded-sm ${editType === 'hierarchy' ? 'bg-emerald-500 text-white' : 'text-white/40'}`}>Hierarchy</button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input className="bg-black/60 border border-emerald-500 rounded-sm px-3 py-1 text-white text-sm font-bengali" value={editTitle} onChange={(e) => setEditTitle(e.target.value)} />
+                      {editType === 'link' ? (
+                        <input className="bg-black/60 border border-emerald-500 rounded-sm px-3 py-1 text-white text-sm" value={editHref} onChange={(e) => setEditHref(e.target.value)} />
+                      ) : (
+                        <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-sm px-3 py-1 text-emerald-400 text-[10px] flex items-center">Sub-page System</div>
+                      )}
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center gap-4">
                     <div className="text-white/20 font-black italic">{index + 1}</div>
-                    <h4 className="text-white font-bold font-bengali">{item.title}</h4>
+                    <div>
+                      <h4 className="text-white font-bold font-bengali">{item.title}</h4>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className={`text-[8px] font-black uppercase tracking-widest px-1.5 py-0.5 rounded-sm ${item.type === 'hierarchy' ? 'bg-purple-500/20 text-purple-400' : 'bg-emerald-500/20 text-emerald-400'}`}>
+                          {item.type || 'link'}
+                        </span>
+                        {item.type === 'hierarchy' && (
+                          <Link href={`/admin/home/explore/${item.id}`} className="text-[10px] text-white/40 hover:text-white underline font-bold">
+                            ম্যানেজ সাব-পেজ
+                          </Link>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div className="flex gap-1">
                   {editingId === item.id ? (
                     <button onClick={() => handleUpdate(item.id)} className="p-2 text-emerald-400 hover:bg-emerald-400/10 rounded-sm"><Save size={18}/></button>
                   ) : (
-                    <button onClick={() => { setEditingId(item.id); setEditTitle(item.title); setEditHref(item.href); }} className="p-2 text-white/20 hover:text-white rounded-sm"><Edit2 size={16}/></button>
+                    <button onClick={() => { setEditingId(item.id); setEditTitle(item.title); setEditHref(item.href); setEditType(item.type || 'link'); }} className="p-2 text-white/20 hover:text-white rounded-sm"><Edit2 size={16}/></button>
                   )}
                   <button onClick={() => handleDelete("homeMenu", item.id)} className="p-2 text-red-500/20 hover:text-red-500 rounded-sm"><Trash2 size={16}/></button>
                 </div>

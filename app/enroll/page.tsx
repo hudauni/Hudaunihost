@@ -15,6 +15,7 @@ function EnrollContent() {
   const { user, userData } = useAuth();
 
   const courseTitle = searchParams.get('course') || "Islamic Course";
+  const type = searchParams.get('type') || "course";
 
   const [senderNumber, setSenderNumber] = useState("");
   const [amount, setAmount] = useState("");
@@ -43,7 +44,8 @@ function EnrollContent() {
 
     setLoading(true);
     try {
-      await addDoc(collection(db, "courseRequests"), {
+      const collectionName = type === 'service' ? "serviceRequests" : "courseRequests";
+      await addDoc(collection(db, collectionName), {
         uid: user.uid,
         displayName: userData?.displayName || user.displayName,
         email: user.email,
