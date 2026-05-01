@@ -44,19 +44,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setHasMounted(true);
 
-    // Google Auth Initialization for Mobile
-    const initMobileAuth = async () => {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
-          await GoogleAuth.initialize();
-        } catch (e) {
-          console.warn("Mobile GoogleAuth init failed:", e);
-        }
-      }
-    };
-
-    initMobileAuth();
+    // Google Auth Initialization for Native App only
+    if (Capacitor.isNativePlatform()) {
+      import('@codetrix-studio/capacitor-google-auth').then(({ GoogleAuth }) => {
+        try { GoogleAuth.initialize(); } catch (e) { console.warn("GoogleAuth init failed", e); }
+      }).catch(err => console.error("Plugin load failed", err));
+    }
   }, []);
 
   useEffect(() => {
@@ -76,8 +69,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           unsubscribeUserDoc = onSnapshot(userRef, (docSnap) => {
             if (docSnap.exists()) {
               setUserData(docSnap.data());
-            } else {
-              setUserData(null);
             }
           });
         } else {
@@ -89,14 +80,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             unsubscribeUserDoc = null;
           }
 
-          // Redirect to login if not authenticated and trying to access private routes
-          const isLoginPage = pathname?.includes('/login');
-          if (!isLoginPage && pathname !== '/') {
+          // Safe Redirect logic
+          const isAuthPage = pathname?.includes('/login');
+          const isAdminRoute = pathname?.startsWith('/admin');
+          if (!isAuthPage && !isAdminRoute && pathname !== '/') {
              router.push('/login');
           }
         }
       } catch (error) {
-        console.error("Auth sync error:", error);
+        console.error("Auth error:", error);
       } finally {
         setLoading(false);
       }
@@ -106,47 +98,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
     };
-  }, [hasMounted, pathname, router]);
+  }, [hasMounted]); // Only run once on mount
 
   const syncUserData = async (firebaseUser: User): Promise<{data: any, collection: 'users' | 'admins'}> => {
     try {
       const adminRef = doc(db, "admins", firebaseUser.uid);
       const adminSnap = await getDoc(adminRef);
-
-      if (adminSnap.exists()) {
-        return { data: adminSnap.data(), collection: 'admins' };
-      }
+      if (adminSnap.exists()) return { data: adminSnap.data(), collection: 'admins' };
 
       const userRef = doc(db, "users", firebaseUser.uid);
       const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) return { data: userSnap.data(), collection: 'users' };
 
-      if (userSnap.exists()) {
-        return { data: userSnap.data(), collection: 'users' };
-      } else {
-        const newData = await runTransaction(db, async (transaction) => {
-          const counterRef = doc(db, "counters", "users");
-          const counterSnap = await transaction.get(counterRef);
-          let nextId = 1;
-          if (counterSnap.exists()) {
-            nextId = counterSnap.data().lastId + 1;
-          }
-          const data = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
-            photoURL: firebaseUser.photoURL,
-            role: 'associate',
-            associateId: nextId,
-            createdAt: new Date().toISOString()
-          };
-          transaction.set(userRef, data);
-          transaction.set(counterRef, { lastId: nextId }, { merge: true });
-          return data;
-        });
-        return { data: newData, collection: 'users' };
-      }
+      const newData = await runTransaction(db, async (transaction) => {
+        const counterRef = doc(db, "counters", "users");
+        const counterSnap = await transaction.get(counterRef);
+        let nextId = 1;
+        if (counterSnap.exists()) nextId = counterSnap.data().lastId + 1;
+        const data = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0],
+          photoURL: firebaseUser.photoURL,
+          role: 'associate',
+          associateId: nextId,
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(userRef, data);
+        transaction.set(counterRef, { lastId: nextId }, { merge: true });
+        return data;
+      });
+      return { data: newData, collection: 'users' };
     } catch (e) {
-      console.error("syncUserData error:", e);
       return { data: null, collection: 'users' };
     }
   };
@@ -164,44 +147,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await signInWithPopup(auth, googleProvider);
       }
     } catch (error: any) {
-      console.error("Login failed:", error);
       if (Capacitor.isNativePlatform()) alert("Login Error: " + error.message);
     }
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (error) {
-      console.error("Email login failed:", error);
-      throw error;
-    }
+    await signInWithEmailAndPassword(auth, email, pass);
   };
 
   const logout = async (redirectPath?: string) => {
-    try {
-      await signOut(auth);
-      router.push(redirectPath || '/login');
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+    await signOut(auth);
+    router.push(redirectPath || '/login');
   };
+
+  if (!hasMounted) return <div style={{background: '#001a1a', minHeight: '100vh'}} />;
 
   return (
     <AuthContext.Provider value={{ user, userData, userCollection, loading, login, loginWithEmail, logout }}>
-      {hasMounted ? children : (
-        <div className="min-h-screen bg-[#001a1a] flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-        </div>
-      )}
+      {children}
     </AuthContext.Provider>
   );
 }
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
