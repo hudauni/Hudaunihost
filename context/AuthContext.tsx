@@ -6,7 +6,6 @@ import { auth, googleProvider, db } from '@/lib/firebase';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
-import { Loader2 } from 'lucide-react';
 
 interface AuthContextType {
   user: User | null;
@@ -31,9 +30,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    if (Capacitor.isNativePlatform()) {
+    if (typeof window !== 'undefined' && Capacitor.isNativePlatform()) {
       import('@codetrix-studio/capacitor-google-auth').then(({ GoogleAuth }) => {
-        try { GoogleAuth.initialize(); } catch (e) { console.warn("GoogleAuth init failed"); }
+        try { GoogleAuth.initialize(); } catch (e) {}
       });
     }
   }, []);
@@ -41,40 +40,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
 
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      try {
-        if (firebaseUser) {
-          setUser(firebaseUser);
-
-          // Role check
-          const adminSnap = await getDoc(doc(db, "admins", firebaseUser.uid));
-          const collectionName = adminSnap.exists() ? 'admins' : 'users';
-          setUserCollection(collectionName);
-
-          // Get user data
-          const userDoc = await getDoc(doc(db, collectionName, firebaseUser.uid));
-          if (userDoc.exists()) {
-            setUserData(userDoc.data());
-          }
-        } else {
-          setUser(null);
-          setUserData(null);
-
-          const isLoginPage = pathname?.includes('/login');
-          const isHome = pathname === '/';
-          if (!isLoginPage && !isHome) {
-            router.push('/login');
-          }
-        }
-      } catch (err) {
-        console.error("Auth observer error:", err);
-      } finally {
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        setUser(firebaseUser);
+        // Load user data in background, don't block the UI
+        fetchAndSetUserData(firebaseUser);
+      } else {
+        setUser(null);
+        setUserData(null);
         setLoading(false);
+
+        // Safe redirect
+        const isAuthPage = pathname?.includes('/login');
+        if (!isAuthPage && pathname !== '/') {
+          router.push('/login');
+        }
       }
     });
 
     return () => unsubscribe();
-  }, [mounted, pathname, router]);
+  }, [mounted, pathname]);
+
+  const fetchAndSetUserData = async (firebaseUser: User) => {
+    try {
+      const adminSnap = await getDoc(doc(db, "admins", firebaseUser.uid));
+      const col = adminSnap.exists() ? 'admins' : 'users';
+      setUserCollection(col);
+
+      const userSnap = await getDoc(doc(db, col, firebaseUser.uid));
+      if (userSnap.exists()) {
+        setUserData(userSnap.data());
+      }
+    } catch (e) {
+      console.error("Error loading user data", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async () => {
     try {
@@ -107,9 +109,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, userData, userCollection, loading, login, loginWithEmail, logout }}>
       {loading ? (
-        <div className="min-h-screen bg-[#001a1a] flex flex-col items-center justify-center gap-4">
-           <Loader2 className="animate-spin text-emerald-500" size={40} />
-           <p className="text-white/20 text-xs font-bold uppercase tracking-widest">Huda Uni Loading...</p>
+        <div className="min-h-screen bg-[#001a1a] flex flex-col items-center justify-center">
+           <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+           <p className="mt-4 text-white/20 text-[10px] font-bold tracking-widest uppercase">System Loading...</p>
         </div>
       ) : children}
     </AuthContext.Provider>
