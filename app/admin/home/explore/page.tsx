@@ -33,6 +33,8 @@ function AdminExploreContent() {
   const [sTitle, setSTitle] = useState("");
   const [sVideo, setSVideo] = useState("");
   const [sDetails, setSDetails] = useState("");
+  const [sEnrollText, setSEnrollText] = useState("Enroll Now");
+  const [sEnrollUrl, setSEnrollUrl] = useState("");
 
   const fetchData = useCallback(async () => {
     if (!id) return;
@@ -100,9 +102,12 @@ function AdminExploreContent() {
         title: sTitle,
         youtubeId: videoId,
         details: sDetails,
+        enrollText: sEnrollText,
+        enrollUrl: sEnrollUrl,
         createdAt: serverTimestamp()
       });
       setSTitle(""); setSVideo(""); setSDetails("");
+      setSEnrollText("Enroll Now"); setSEnrollUrl("");
       setIsAddingService(false);
     } catch (e) { console.error(e); }
     finally { setSubmitting(false); }
@@ -206,6 +211,17 @@ function AdminExploreContent() {
                    <div className="space-y-1">
                       <p className="text-[9px] text-white/40 uppercase font-bold">Description</p>
                       <textarea placeholder="Service Details..." rows={4} value={sDetails} onChange={(e) => setSDetails(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali resize-none"></textarea>
+                   </div>
+
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <p className="text-[9px] text-white/40 uppercase font-bold">Enroll Button Text</p>
+                        <input type="text" placeholder="Enroll Now" value={sEnrollText} onChange={(e) => setSEnrollText(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-[9px] text-white/40 uppercase font-bold">Custom Enroll Link (Optional)</p>
+                        <input type="text" placeholder="Leave empty for default" value={sEnrollUrl} onChange={(e) => setSEnrollUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50" />
+                      </div>
                    </div>
                    <button disabled={submitting} className="w-full bg-emerald-600 py-3 rounded-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50">
                       {submitting ? "সেভ হচ্ছে..." : "সার্ভিস সেভ করুন"}

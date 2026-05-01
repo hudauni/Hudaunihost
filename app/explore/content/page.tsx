@@ -105,10 +105,13 @@ function ExploreContentInner() {
                   </button>
 
                   {/* Enroll Button */}
-                  <Link href={`/enroll/?type=service&course=${encodeURIComponent(card.title)}`} className="flex-[2]">
+                  <Link
+                    href={card.enrollUrl || `/enroll/?type=service&course=${encodeURIComponent(card.title)}`}
+                    className="flex-[2]"
+                  >
                     <button className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-emerald-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                       <Zap size={16} fill="currentColor" />
-                      ENROLL NOW
+                      {card.enrollText || "ENROLL NOW"}
                     </button>
                   </Link>
                 </div>
