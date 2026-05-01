@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Play, Loader2, User, Zap, Bell } from 'lucide-react';
+import { Play, Loader2, User, Zap, Bell, FileText, X, Info } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import AssociateId from '@/components/AssociateId';
 import { useAuth } from '@/context/AuthContext';
@@ -19,12 +19,17 @@ const PrayerTimeCircle = dynamic(() => import('@/components/PrayerTimeCircle'), 
 });
 
 export default function HomePage() {
+  const [mounted, setMounted] = useState(false);
   const { user, userData, loading: authLoading } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [promoVideos, setPromoVideos] = useState<any[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+
+  // Modal State for Video Details
+  const [selectedVideoDetails, setSelectedVideoDetails] = useState<{title: string, details: string} | null>(null);
+
   const [isDesktop, setIsDesktop] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const router = useRouter();
@@ -57,6 +62,7 @@ export default function HomePage() {
   const videoElementsRef = useRef<{[key: string]: HTMLDivElement | null}>({});
 
   useEffect(() => {
+    setMounted(true);
     const handleResize = () => setIsDesktop(window.innerWidth >= 1024);
     handleResize();
     window.addEventListener('resize', handleResize);
@@ -150,7 +156,7 @@ export default function HomePage() {
     }
   }, [user, authLoading]);
 
-  if (authLoading || (dataLoading && menuItems.length === 0)) {
+  if (!mounted || authLoading || (dataLoading && menuItems.length === 0)) {
     return (
       <div className="min-h-screen bg-[#001a1a] flex items-center justify-center">
         <Loader2 className="animate-spin text-emerald-500" size={40} />
@@ -282,9 +288,21 @@ export default function HomePage() {
                       <h4 className="text-white font-bold font-bengali text-[13px] drop-shadow-md leading-tight">{video.title}</h4>
                     </div>
 
-                    <Link href={`/enroll?course=${encodeURIComponent(video.title)}`} className="w-full py-3 bg-white text-black rounded-lg font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all">
-                      <Zap size={14} fill="currentColor" /> Enroll Now
-                    </Link>
+                    <div className="flex gap-2 w-full">
+                      <button
+                        onClick={() => setSelectedVideoDetails({title: video.title, details: video.details})}
+                        className="flex-1 py-3 bg-black hover:bg-black/80 text-white border border-white/10 rounded-lg font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                      >
+                        <FileText size={14} className="text-emerald-400" /> বিবরণ
+                      </button>
+
+                      <Link
+                        href={`/enroll/?course=${encodeURIComponent(video.title)}`}
+                        className="flex-[2] py-3 bg-white text-black rounded-lg font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"
+                      >
+                        <Zap size={14} fill="currentColor" /> Enroll Now
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -376,9 +394,22 @@ export default function HomePage() {
                         </div>
                       )}
                     </div>
-                    <Link href={`/enroll?course=${encodeURIComponent(video.title)}`} className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl transition-all">
-                      <Zap size={18} fill="currentColor" /> Enroll Now
-                    </Link>
+
+                    <div className="flex gap-4">
+                      <button
+                        onClick={() => setSelectedVideoDetails({title: video.title, details: video.details})}
+                        className="flex-1 py-4 bg-black hover:bg-black/80 text-white border border-white/10 rounded-xl font-bold uppercase tracking-widest flex items-center justify-center gap-3 transition-all"
+                      >
+                        <FileText size={20} className="text-emerald-400" /> বিস্তারিত বিবরণ
+                      </button>
+
+                      <Link
+                        href={`/enroll/?course=${encodeURIComponent(video.title)}`}
+                        className="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl transition-all"
+                      >
+                        <Zap size={18} fill="currentColor" /> Enroll Now
+                      </Link>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -386,6 +417,39 @@ export default function HomePage() {
           </div>
         </div>
       </main>
+
+      {/* --- FULLSCREEN VIDEO DETAILS MODAL --- */}
+      {selectedVideoDetails && (
+        <div className="fixed inset-0 z-[100] bg-[#001a1a] animate-in slide-in-from-bottom duration-300 flex flex-col">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 bg-[#002b2b]">
+            <h3 className="text-white font-bold font-bengali truncate mr-4">{selectedVideoDetails.title}</h3>
+            <button
+              onClick={() => setSelectedVideoDetails(null)}
+              className="p-2 bg-white/5 rounded-full text-white/60 hover:text-white"
+            >
+              <X size={24} />
+            </button>
+          </div>
+          <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="flex items-center gap-3 text-emerald-400 font-black uppercase tracking-[0.3em] text-xs">
+                <Info size={18} /> বিস্তারিত বিবরণ
+              </div>
+              <div className="text-white/80 leading-relaxed font-bengali text-lg whitespace-pre-wrap pb-20">
+                {selectedVideoDetails.details || "কোনো বিবরণ দেওয়া হয়নি।"}
+              </div>
+            </div>
+          </div>
+          <div className="p-6 bg-[#002b2b] border-t border-white/5">
+             <button
+               onClick={() => setSelectedVideoDetails(null)}
+               className="w-full py-4 bg-emerald-600 text-white rounded-2xl font-bold uppercase tracking-widest shadow-xl"
+             >
+               বন্ধ করুন
+             </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
