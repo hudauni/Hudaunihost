@@ -3,17 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 0, 26, 26;
+  --background-end-rgb: 0, 13, 13;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: white;
+  background: #001a1a;
+  min-height: 100vh;
 }
 
-/* Fix for Edge extensions injecting attributes */
-[bis_skin_checked] {
-  outline: none !important;
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+.font-bengali {
+  font-family: var(--font-hind-siliguri), sans-serif;
+}
+
+.dir-rtl {
+  direction: rtl;
 }
