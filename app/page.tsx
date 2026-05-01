@@ -223,15 +223,19 @@ export default function HomePage() {
               <div className="mt-2 mb-1 shrink-0"><PrayerTimeCircle size={150} /></div>
 
               <div className="flex flex-col items-center space-y-3 w-full mt-2">
-                {menuItems.map((item) => (
-                  <Link
-                    key={item.id}
-                    href={item.href}
-                    className="relative w-full max-w-[320px] py-3 px-6 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-between border border-white/10 shadow-lg active:scale-95 transition-all flex-shrink-0"
-                  >
-                    <span className="text-white text-[14px] font-bold tracking-wide flex-1 text-center font-bengali">{item.title}</span>
-                  </Link>
-                ))}
+                {menuItems.map((item) => {
+                  const isHierarchy = item.type === 'hierarchy';
+                  const href = isHierarchy ? `/explore/?id=${item.id}` : (item.href.endsWith('/') ? item.href : `${item.href}/`);
+                  return (
+                    <Link
+                      key={item.id}
+                      href={href}
+                      className="relative w-full max-w-[320px] py-3 px-6 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-between border border-white/10 shadow-lg active:scale-95 transition-all flex-shrink-0"
+                    >
+                      <span className="text-white text-[14px] font-bold tracking-wide flex-1 text-center font-bengali">{item.title}</span>
+                    </Link>
+                  );
+                })}
 
                 {!isDesktop && promoVideos.map((video) => (
                   <div
@@ -325,7 +329,11 @@ export default function HomePage() {
               <h3 className="text-white/40 text-xs font-bold uppercase tracking-[0.3em] mb-6 pl-4 border-l-2 border-emerald-500 flex-shrink-0">Academic Navigation</h3>
               <div className="flex flex-col space-y-4 overflow-y-auto pr-6 custom-scrollbar pb-10">
                 {menuItems.map((item) => (
-                  <Link key={item.id} href={item.href} className="group relative w-full py-5 px-8 bg-white/[0.05] backdrop-blur-3xl rounded-full flex items-center justify-center transition-all duration-300 border border-white/10 shadow-2xl hover:bg-white/[0.08] hover:translate-x-2 flex-shrink-0">
+                  <Link
+                    key={item.id}
+                    href={item.href.endsWith('/') ? item.href : `${item.href}/`}
+                    className="group relative w-full py-5 px-8 bg-white/[0.05] backdrop-blur-3xl rounded-full flex items-center justify-center transition-all duration-300 border border-white/10 shadow-2xl hover:bg-white/[0.08] hover:translate-x-2 flex-shrink-0"
+                  >
                     <span className="text-white text-xl font-bold tracking-wide group-hover:text-emerald-400 transition-colors font-bengali">{item.title}</span>
                   </Link>
                 ))}

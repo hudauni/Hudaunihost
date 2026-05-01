@@ -1,5 +1,5 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, enableMultiTabIndexedDbPersistence } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -16,6 +16,18 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// Enable Offline Persistence
+if (typeof window !== "undefined") {
+  enableMultiTabIndexedDbPersistence(db).catch((err) => {
+    if (err.code === 'failed-precondition') {
+      console.warn("Persistence failed: Multiple tabs open.");
+    } else if (err.code === 'unimplemented') {
+      console.warn("Persistence is not supported by this browser.");
+    }
+  });
+}
+
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 

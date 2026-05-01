@@ -86,7 +86,7 @@ export default function AdminHomeManagement() {
       });
 
       // Update with correct ID-based link for hierarchy
-      const finalHref = newType === 'link' ? newHref : `/explore/${docRef.id}`;
+      const finalHref = newType === 'link' ? newHref : `/explore/?id=${docRef.id}`;
       await updateDoc(docRef, { href: finalHref });
 
       setNewTitle(""); setNewHref(""); setNewType('link');
@@ -118,7 +118,7 @@ export default function AdminHomeManagement() {
   const handleUpdate = async (id: string) => {
     await updateDoc(doc(db, "homeMenu", id), {
       title: editTitle,
-      href: editType === 'link' ? editHref : `/explore/${id}`,
+      href: editType === 'link' ? editHref : `/explore/?id=${id}`,
       type: editType
     });
     setEditingId(null);
@@ -234,7 +234,7 @@ export default function AdminHomeManagement() {
                           {item.type || 'link'}
                         </span>
                         {item.type === 'hierarchy' && (
-                          <Link href={`/admin/home/explore/${item.id}`} className="text-[10px] text-white/40 hover:text-white underline font-bold">
+                          <Link href={`/admin/home/explore/?id=${item.id}`} className="text-[10px] text-white/40 hover:text-white underline font-bold">
                             ম্যানেজ সাব-পেজ
                           </Link>
                         )}

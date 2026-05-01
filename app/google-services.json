@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "650683096129",
+    "firebase_url": "https://hudauni2u-default-rtdb.firebaseio.com",
+    "project_id": "hudauni2u",
+    "storage_bucket": "hudauni2u.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:650683096129:android:a5afb1fdb85565e6c4bac0",
+        "android_client_info": {
+          "package_name": "com.kaium.hudauni"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "650683096129-o8mq8rssv9od12trcsvu6dgq4gcf9co9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD8VKv9Qwa2Jw2VZjcJgUuYkvQ1R99NllY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "650683096129-o8mq8rssv9od12trcsvu6dgq4gcf9co9.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

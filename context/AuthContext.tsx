@@ -6,7 +6,9 @@ import {
   signInWithPopup,
   signInWithEmailAndPassword,
   signOut,
-  User
+  User,
+  GoogleAuthProvider,
+  signInWithCredential
 } from 'firebase/auth';
 import { auth, googleProvider, db } from '@/lib/firebase';
 import {
@@ -16,6 +18,13 @@ import {
   runTransaction
 } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+
+// Initialize GoogleAuth for native platforms
+if (Capacitor.isNativePlatform()) {
+  GoogleAuth.initialize();
+}
 
 interface AuthContextType {
   user: User | null;
@@ -141,9 +150,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (error) {
+      if (Capacitor.isNativePlatform()) {
+        const googleUser = await GoogleAuth.signIn();
+        if (googleUser && googleUser.authentication.idToken) {
+          const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
+          await signInWithCredential(auth, credential);
+        } else {
+          alert("Google ID Token not found.");
+        }
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
+    } catch (error: any) {
       console.error("Login failed:", error);
+      alert("Login Error: " + (error.message || JSON.stringify(error)));
     }
   };
 

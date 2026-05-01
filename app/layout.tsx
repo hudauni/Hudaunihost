@@ -13,8 +13,17 @@ const hindSiliguri = Hind_Siliguri({
 export const metadata: Metadata = {
   title: "Huda Uni - Islamic University Platform",
   description: "A professional platform for Islamic education and services",
+  manifest: "/manifest.json",
+  themeColor: "#10b981",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   icons: {
     icon: "/images/favicon.ico",
+    apple: "/icon-192x192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Huda Uni",
   },
 };
 

@@ -1,0 +1,21 @@
+{
+  "name": "Huda Uni",
+  "short_name": "HudaUni",
+  "description": "Islamic University Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#001a1a",
+  "theme_color": "#10b981",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
