@@ -1,19 +1,12 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  onAuthStateChanged,
-  signInWithPopup,
-  signInWithEmailAndPassword,
-  signOut,
-  User,
-  GoogleAuthProvider,
-  signInWithCredential
-} from 'firebase/auth';
+import { onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword, signOut, User, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth, googleProvider, db } from '@/lib/firebase';
-import { doc, getDoc, onSnapshot, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
+import { Loader2 } from 'lucide-react';
 
 interface AuthContextType {
   user: User | null;
@@ -40,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setMounted(true);
     if (Capacitor.isNativePlatform()) {
       import('@codetrix-studio/capacitor-google-auth').then(({ GoogleAuth }) => {
-        try { GoogleAuth.initialize(); } catch (e) {}
+        try { GoogleAuth.initialize(); } catch (e) { console.warn("GoogleAuth init failed"); }
       });
     }
   }, []);
@@ -48,34 +41,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!mounted) return;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        setUser(firebaseUser);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      try {
+        if (firebaseUser) {
+          setUser(firebaseUser);
 
-        // Quick check for admin role
-        const adminRef = doc(db, "admins", firebaseUser.uid);
-        const adminSnap = await getDoc(adminRef);
-        const collectionName = adminSnap.exists() ? 'admins' : 'users';
-        setUserCollection(collectionName);
+          // Role check
+          const adminSnap = await getDoc(doc(db, "admins", firebaseUser.uid));
+          const collectionName = adminSnap.exists() ? 'admins' : 'users';
+          setUserCollection(collectionName);
 
-        // Simple listener for data
-        const unsubDoc = onSnapshot(doc(db, collectionName, firebaseUser.uid), (snap) => {
-          if (snap.exists()) setUserData(snap.data());
-          setLoading(false);
-        });
+          // Get user data
+          const userDoc = await getDoc(doc(db, collectionName, firebaseUser.uid));
+          if (userDoc.exists()) {
+            setUserData(userDoc.data());
+          }
+        } else {
+          setUser(null);
+          setUserData(null);
 
-        return () => unsubDoc();
-      } else {
-        setUser(null);
-        setUserData(null);
-        setLoading(false);
-        if (pathname !== '/' && !pathname.includes('/login')) {
-          router.push('/login');
+          const isLoginPage = pathname?.includes('/login');
+          const isHome = pathname === '/';
+          if (!isLoginPage && !isHome) {
+            router.push('/login');
+          }
         }
+      } catch (err) {
+        console.error("Auth observer error:", err);
+      } finally {
+        setLoading(false);
       }
     });
 
-    return () => unsubscribeAuth();
+    return () => unsubscribe();
   }, [mounted, pathname, router]);
 
   const login = async () => {
@@ -96,27 +94,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loginWithEmail = async (email: string, pass: string) => {
-    try {
-      await signInWithEmailAndPassword(auth, email, pass);
-    } catch (e) {
-      throw e;
-    }
+    await signInWithEmailAndPassword(auth, email, pass);
   };
 
   const logout = async (redirectPath?: string) => {
-    try {
-      await signOut(auth);
-      router.push(redirectPath || '/login');
-    } catch (e) {}
+    await signOut(auth);
+    router.push(redirectPath || '/login');
   };
 
-  if (!mounted) return <div className="min-h-screen bg-[#001a1a]" />;
+  if (!mounted) return null;
 
   return (
     <AuthContext.Provider value={{ user, userData, userCollection, loading, login, loginWithEmail, logout }}>
-      <div className={loading ? "opacity-0" : "opacity-100 transition-opacity duration-500"}>
-        {children}
-      </div>
+      {loading ? (
+        <div className="min-h-screen bg-[#001a1a] flex flex-col items-center justify-center gap-4">
+           <Loader2 className="animate-spin text-emerald-500" size={40} />
+           <p className="text-white/20 text-xs font-bold uppercase tracking-widest">Huda Uni Loading...</p>
+        </div>
+      ) : children}
     </AuthContext.Provider>
   );
 }
