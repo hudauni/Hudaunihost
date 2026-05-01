@@ -19,12 +19,6 @@ import {
 } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-
-// Initialize GoogleAuth for native platforms
-if (Capacitor.isNativePlatform()) {
-  GoogleAuth.initialize();
-}
 
 interface AuthContextType {
   user: User | null;
@@ -43,8 +37,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [userData, setUserData] = useState<any | null>(null);
   const [userCollection, setUserCollection] = useState<'users' | 'admins'>('users');
   const [loading, setLoading] = useState(true);
+  const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setHasMounted(true);
+    // Initialize GoogleAuth only on Client and for Native Platforms
+    if (Capacitor.isNativePlatform()) {
+      const initGoogle = async () => {
+        try {
+          const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
+          await GoogleAuth.initialize();
+        } catch (e) {
+          console.warn("GoogleAuth init failed:", e);
+        }
+      };
+      initGoogle();
+    }
+  }, []);
 
   useEffect(() => {
     let unsubscribeUserDoc: (() => void) | null = null;
@@ -93,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribeAuth();
       if (unsubscribeUserDoc) unsubscribeUserDoc();
     };
-  }, []);
+  }, [pathname, router]);
 
   useEffect(() => {
     if (!loading && !user && pathname && !pathname.startsWith('/login') && !pathname.startsWith('/admin')) {
@@ -151,6 +162,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async () => {
     try {
       if (Capacitor.isNativePlatform()) {
+        const { GoogleAuth } = await import('@codetrix-studio/capacitor-google-auth');
         const googleUser = await GoogleAuth.signIn();
         if (googleUser && googleUser.authentication.idToken) {
           const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken);
@@ -163,7 +175,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (error: any) {
       console.error("Login failed:", error);
-      alert("Login Error: " + (error.message || JSON.stringify(error)));
+      if (Capacitor.isNativePlatform()) {
+        alert("Login Error: " + (error.message || JSON.stringify(error)));
+      }
     }
   };
 
@@ -187,7 +201,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, userData, userCollection, loading, login, loginWithEmail, logout }}>
-      {children}
+      {hasMounted ? children : null}
     </AuthContext.Provider>
   );
 }

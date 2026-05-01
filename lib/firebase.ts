@@ -19,13 +19,18 @@ const db = getFirestore(app);
 
 // Enable Offline Persistence
 if (typeof window !== "undefined") {
-  enableMultiTabIndexedDbPersistence(db).catch((err) => {
-    if (err.code === 'failed-precondition') {
-      console.warn("Persistence failed: Multiple tabs open.");
-    } else if (err.code === 'unimplemented') {
-      console.warn("Persistence is not supported by this browser.");
-    }
-  });
+  // Use a more modern and robust way to enable persistence
+  try {
+    enableMultiTabIndexedDbPersistence(db).catch((err) => {
+      if (err.code === 'failed-precondition') {
+        console.warn("Persistence failed: Multiple tabs open.");
+      } else if (err.code === 'unimplemented') {
+        console.warn("Persistence is not supported by this browser.");
+      }
+    });
+  } catch (e) {
+    console.error("Firestore persistence error:", e);
+  }
 }
 
 const auth = getAuth(app);
