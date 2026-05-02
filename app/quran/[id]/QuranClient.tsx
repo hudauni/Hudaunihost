@@ -20,6 +20,7 @@ interface SurahData {
   number: number;
   name: string;
   englishName: string;
+  revelationType: string;
   ayahs: Ayah[];
   bismillah?: string;
 }
@@ -29,6 +30,10 @@ const RECITERS = [
   { id: 'ar.abdulsamad', name: 'Abdul Basit' },
   { id: 'ar.mahermuaiqly', name: 'Maher Al-Muaiqly' },
   { id: 'ar.hanirifai', name: 'Hani ar-Rifai' },
+];
+
+const TRANSLATORS = [
+  { id: '163', name: 'মাওলানা মুজিবুর রহমান' },
 ];
 
 const BENGALI_SURAH_NAMES: Record<number, string> = {
@@ -62,6 +67,7 @@ export default function QuranClient() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [menuView, setMenuView] = useState<'main' | 'qari' | 'font' | 'surahList'>('main');
   const [selectedQari, setSelectedQari] = useState('ar.alafasy');
+  const [selectedTranslator, setSelectedTranslator] = useState('163');
   const [playingAyahKey, setPlayingAyahKey] = useState<string | null>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
   const [surahInput, setSurahInput] = useState("");
@@ -104,9 +110,9 @@ export default function QuranClient() {
     }
   }, []);
 
-  const fetchSurahData = async (id: string | number, qari: string) => {
+  const fetchSurahData = async (id: string | number, qari: string, translator: string) => {
     // Check local storage cache first for offline support
-    const cacheKey = `surah_data_${id}_${qari}`;
+    const cacheKey = `surah_data_${id}_${qari}_${translator}`;
     const cachedData = localStorage.getItem(cacheKey);
     if (cachedData) {
       try {
@@ -117,12 +123,22 @@ export default function QuranClient() {
     }
 
     const BISMILLAH = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰনِ ٱلرَّحِيمِ";
-    const response = await fetch(`https://api.alquran.cloud/v1/surah/${id}/editions/quran-uthmani,bn.bengali,${qari}`);
-    const json = await response.json();
 
-    const arabicData = json.data[0];
-    const translationData = json.data[1];
-    const audioData = json.data[2];
+    // Build Al Quran Cloud URL (Arabic + Audio always)
+    const alCloudUrl = `https://api.alquran.cloud/v1/surah/${id}/editions/quran-uthmani,${qari}`;
+    const quranComUrl = `https://api.quran.com/api/v4/verses/by_chapter/${id}?translations=163&per_page=300`;
+
+    const [alCloudRes, quranComRes] = await Promise.all([
+      fetch(alCloudUrl),
+      fetch(quranComUrl)
+    ]);
+
+    const alCloudJson = await alCloudRes.json();
+    const quranComJson = await quranComRes.json();
+
+    const arabicData = alCloudJson.data[0];
+    const audioData = alCloudJson.data[1];
+    const quranComTranslationData = quranComJson?.verses || [];
 
     let surahBismillah = "";
     const combinedAyahs = arabicData.ayahs.map((ayah: any, index: number) => {
@@ -133,10 +149,15 @@ export default function QuranClient() {
           text = text.replace(BISMILLAH, "").trim();
         }
       }
+
+      // Get translation from Quran.com and strip HTML tags
+      const rawTranslation = quranComTranslationData[index]?.translations?.[0]?.text || "অনুবাদ পাওয়া যায়নি";
+      const cleanTranslation = rawTranslation.replace(/<\/?[^>]+(>|$)/g, "");
+
       return {
         number: ayah.numberInSurah,
         text: text,
-        translation: translationData.ayahs[index].text,
+        translation: cleanTranslation,
         audio: audioData.ayahs[index].audio
       };
     });
@@ -145,6 +166,7 @@ export default function QuranClient() {
       number: arabicData.number,
       name: arabicData.name,
       englishName: arabicNameTranslation(id),
+      revelationType: arabicData.revelationType,
       ayahs: combinedAyahs,
       bismillah: surahBismillah
     };
@@ -257,11 +279,11 @@ export default function QuranClient() {
     if (!nextSurahId || isFetchingNext || loading) return;
     setIsFetchingNext(true);
     try {
-      const data = await fetchSurahData(nextSurahId, selectedQari);
+      const data = await fetchSurahData(nextSurahId, selectedQari, selectedTranslator);
       setSurahs(prev => [...prev, data]);
       setNextSurahId(data.number < 114 ? data.number + 1 : null);
     } catch (err) { console.error(err); } finally { setIsFetchingNext(false); }
-  }, [nextSurahId, isFetchingNext, loading, selectedQari]);
+  }, [nextSurahId, isFetchingNext, loading, selectedQari, selectedTranslator]);
 
   const loadPrevSurah = useCallback(async () => {
     if (!prevSurahId || isFetchingPrev || loading) return;
@@ -272,7 +294,7 @@ export default function QuranClient() {
     const currentHeight = document.documentElement.scrollHeight;
 
     try {
-      const data = await fetchSurahData(prevSurahId, selectedQari);
+      const data = await fetchSurahData(prevSurahId, selectedQari, selectedTranslator);
 
       // Update state
       setSurahs(prev => [data, ...prev]);
@@ -289,7 +311,7 @@ export default function QuranClient() {
     } finally {
       setIsFetchingPrev(false);
     }
-  }, [prevSurahId, isFetchingPrev, loading, selectedQari]);
+  }, [prevSurahId, isFetchingPrev, loading, selectedQari, selectedTranslator]);
 
   const loaderRef = useCallback((node: HTMLDivElement | null) => {
     if (loading) return;
@@ -399,7 +421,7 @@ export default function QuranClient() {
         audioRef.current.src = "";
       }
       try {
-        const data = await fetchSurahData(params.id as string, selectedQari);
+        const data = await fetchSurahData(params.id as string, selectedQari, selectedTranslator);
         if (isMounted) {
           setSurahs([data]);
           setActiveSurahId(data.number);
@@ -420,7 +442,7 @@ export default function QuranClient() {
     };
     init();
     return () => { isMounted = false; };
-  }, [params.id, selectedQari, scrollToAyah, checkDownloadStatus]);
+  }, [params.id, selectedQari, selectedTranslator, scrollToAyah, checkDownloadStatus]);
 
   return (
     <div className="min-h-screen w-full bg-[#001a1a] flex flex-col font-sans overflow-x-hidden relative">
@@ -655,7 +677,13 @@ export default function QuranClient() {
                       return (
                         <div key={ayahKey} data-surah={surah.number} data-ayah={ayah.number} id={`ayah-${surah.number}-${ayah.number}`} className={`w-full p-6 backdrop-blur-3xl rounded-2xl border flex flex-col space-y-5 shadow-xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/30' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
                           <div className="flex justify-between items-center">
-                            <span className="text-emerald-500/60 font-bold text-[10px] bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">আয়াত {toBengaliNumber(ayah.number)}</span>
+                            <span className="text-emerald-500/60 font-bold text-[12px] bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 flex items-center gap-2">
+                              <span className="font-bengali">{BENGALI_SURAH_NAMES[surah.number]}</span>
+                              <span className="opacity-40">|</span>
+                              <span>{toBengaliNumber(surah.number)}:{toBengaliNumber(ayah.number)}</span>
+                              <span className="opacity-40">|</span>
+                              <span className="font-bengali">{surah.revelationType === 'Meccan' ? 'মক্কী' : 'মাদানী'}</span>
+                            </span>
                             <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button>
                           </div>
                           <p style={{ fontSize: `${arabicSize}px` }} className="text-white text-right leading-[1.5] font-serif dir-rtl pr-2">{ayah.text}</p>
@@ -688,7 +716,13 @@ export default function QuranClient() {
                         return (
                           <div key={ayahKey} data-surah={surah.number} data-ayah={ayah.number} id={`ayah-desktop-${surah.number}-${ayah.number}`} className={`w-full p-8 backdrop-blur-3xl border rounded-3xl flex flex-col space-y-6 shadow-2xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/40' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
                             <div className="flex justify-between items-center">
-                              <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 font-bold">{ayah.number}</div>
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 font-bold">{ayah.number}</div>
+                                <div className="flex flex-col">
+                                  <span className="text-white/60 font-bold text-sm font-bengali">{BENGALI_SURAH_NAMES[surah.number]} ({toBengaliNumber(surah.number)})</span>
+                                  <span className="text-emerald-500/40 text-[10px] font-bold uppercase tracking-widest">{surah.revelationType}</span>
+                                </div>
+                              </div>
                               <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-3 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={20} fill="currentColor"/> : <Play size={20} fill="currentColor"/>}</button>
                             </div>
                             <p style={{ fontSize: `${arabicSize}px` }} className="text-white text-right leading-[1.5] font-serif">{ayah.text}</p>

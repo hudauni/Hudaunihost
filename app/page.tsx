@@ -181,23 +181,23 @@ export default function HomePage() {
             backgroundPosition: "center",
           }}
         >
-          {/* Header Action Buttons */}
-          <div className="absolute top-6 right-6 flex items-center gap-3 z-50">
+          {/* Header Action Buttons Wrapper */}
+          <div className="absolute top-6 right-6 flex items-center gap-2 z-50 p-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 shadow-2xl">
             {/* Notification Icon */}
             <Link
               href="/notifications"
-              className="relative p-2.5 bg-white/5 backdrop-blur-xl border border-white/10 rounded-full shadow-2xl active:scale-90 transition-all"
+              className="relative p-2.5 bg-white/5 hover:bg-white/10 rounded-full active:scale-90 transition-all"
             >
               <Bell size={20} className="text-white" />
               {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#002b2b] animate-pulse"></span>
+                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border border-black animate-pulse"></span>
               )}
             </Link>
 
             {/* Profile Icon */}
             <Link
               href="/profile"
-              className="p-2.5 bg-gradient-to-br from-[#d4af37] via-[#f9d71c] to-[#b8860b] rounded-full shadow-2xl active:scale-90 transition-all"
+              className="p-2.5 bg-gradient-to-br from-[#d4af37] via-[#f9d71c] to-[#b8860b] rounded-full active:scale-90 transition-all shadow-lg"
             >
               <User size={20} className="text-[#1a472a] stroke-[3]" />
             </Link>
