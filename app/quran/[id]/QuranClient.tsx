@@ -105,6 +105,17 @@ export default function QuranClient() {
   }, []);
 
   const fetchSurahData = async (id: string | number, qari: string) => {
+    // Check local storage cache first for offline support
+    const cacheKey = `surah_data_${id}_${qari}`;
+    const cachedData = localStorage.getItem(cacheKey);
+    if (cachedData) {
+      try {
+        return JSON.parse(cachedData);
+      } catch (e) {
+        console.error("Error parsing cached surah data", e);
+      }
+    }
+
     const BISMILLAH = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰনِ ٱلرَّحِيمِ";
     const response = await fetch(`https://api.alquran.cloud/v1/surah/${id}/editions/quran-uthmani,bn.bengali,${qari}`);
     const json = await response.json();
@@ -130,13 +141,22 @@ export default function QuranClient() {
       };
     });
 
-    return {
+    const finalData = {
       number: arabicData.number,
       name: arabicData.name,
       englishName: arabicNameTranslation(id),
       ayahs: combinedAyahs,
       bismillah: surahBismillah
     };
+
+    // Save to cache for offline use
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(finalData));
+    } catch (e) {
+      console.warn("Local storage full, could not cache surah", e);
+    }
+
+    return finalData;
   };
 
   const arabicNameTranslation = (id: string | number) => {

@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.kaium.hudauni',
-  appName: 'Huda University',
+  appName: 'Huda Uni',
   webDir: 'out',
   server: {
     androidScheme: 'https'

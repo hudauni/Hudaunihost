@@ -38,13 +38,24 @@ export default function QuranListPage() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   useEffect(() => {
+    // Check Cache first
+    const cachedSurahs = localStorage.getItem('quran_surah_list');
+    if (cachedSurahs) {
+      setSurahs(JSON.parse(cachedSurahs));
+      setLoading(false);
+    }
+
     fetch('https://api.alquran.cloud/v1/surah')
       .then(res => res.json())
       .then(data => {
         setSurahs(data.data);
+        localStorage.setItem('quran_surah_list', JSON.stringify(data.data));
         setLoading(false);
       })
-      .catch(err => console.error(err));
+      .catch(err => {
+        console.error(err);
+        if (!cachedSurahs) setLoading(false);
+      });
   }, []);
 
   const toBengaliNumber = (num: number) => {

@@ -1,7 +1,7 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Huda University</string>
-    <string name="title_activity_main">Huda University</string>
+    <string name="app_name">Huda Uni</string>
+    <string name="title_activity_main">Huda Uni</string>
     <string name="package_name">com.kaium.hudauni</string>
     <string name="custom_url_scheme">com.kaium.hudauni</string>
 </resources>
