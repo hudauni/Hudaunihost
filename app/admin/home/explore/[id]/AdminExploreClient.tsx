@@ -6,18 +6,40 @@ import {
   collection, addDoc, getDocs, deleteDoc, doc,
   query, orderBy, updateDoc, where, getDoc, serverTimestamp
 } from 'firebase/firestore';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { Plus, Trash2, Edit2, Save, ArrowLeft, Loader2, PlayCircle, Info, Zap } from 'lucide-react';
 import Link from 'next/link';
+import AdminAlert from '@/components/AdminAlert';
 
-export default function AdminExploreClient() {
-  const { id } = useParams();
+export default function AdminExploreClient({ isQueryParam = false }: { isQueryParam?: boolean }) {
+  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
+
+  const id = isQueryParam ? searchParams.get('id') : params.id;
 
   const [parentButton, setParentButton] = useState<any>(null);
   const [subButtons, setSubButtons] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   // Form State
   const [newTitle, setNewTitle] = useState("");
@@ -150,22 +172,35 @@ export default function AdminExploreClient() {
       setIsEditingContent(false);
       setContentId(null);
       fetchData();
-    } catch (e) { console.error(e); }
+      showAlert('success', 'সফল হয়েছে', 'কন্টেন্ট সফলভাবে সেভ করা হয়েছে।');
+    } catch (e) {
+      console.error(e);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'কন্টেন্ট সেভ করা সম্ভব হয়নি।');
+    }
     finally { setSubmitting(false); }
   };
 
   const handleDeleteSub = async (subId: string) => {
-    if (!confirm("Are you sure?")) return;
-    try {
-      await deleteDoc(doc(db, "exploreMenu", subId));
-      fetchData();
-    } catch (e) { console.error(e); }
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই বাটনটি ডিলিট করতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "exploreMenu", subId));
+        fetchData();
+        showAlert('success', 'সফল হয়েছে', 'বাটনটি ডিলিট করা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'বাটন ডিলিট করা সম্ভব হয়নি।');
+      }
+    });
   };
 
   if (loading) return <div className="p-20 text-emerald-500 animate-pulse font-bold">লোড হচ্ছে...</div>;
 
   return (
     <div className="space-y-10 pb-20">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex items-center gap-4">
         <Link href="/admin/home">
           <button className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all">

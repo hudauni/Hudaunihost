@@ -30,6 +30,7 @@ import {
   Heart,
   CreditCard
 } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 interface UserData {
   id: string;
@@ -48,6 +49,24 @@ export default function AdminUsersList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newRole, setNewRole] = useState("");
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   // Drawer states
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
@@ -119,20 +138,25 @@ export default function AdminUsersList() {
     try {
       await updateDoc(doc(db, "users", uid), { role });
       fetchUsers();
+      showAlert('success', 'সফল হয়েছে', 'ইউজারের রোল পরিবর্তন করা হয়েছে।');
     } catch (e) {
       console.error(e);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'রোল পরিবর্তন করা সম্ভব হয়নি।');
     }
   };
 
   const deleteUser = async (id: string) => {
-    if (!confirm("আপনি কি নিশ্চিত যে এই ইউজারকে ডিলিট করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, "users", id));
-      setIsDrawerOpen(false);
-      fetchUsers();
-    } catch (e) {
-      console.error(e);
-    }
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিত যে এই ইউজারকে ডিলিট করতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "users", id));
+        setIsDrawerOpen(false);
+        fetchUsers();
+        showAlert('success', 'সফল হয়েছে', 'ইউজারকে ডিলিট করা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'ইউজার ডিলিট করা সম্ভব হয়নি।');
+      }
+    });
   };
 
   const filteredUsers = useMemo(() => {
@@ -149,6 +173,10 @@ export default function AdminUsersList() {
 
   return (
     <div className="relative min-h-screen">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       {/* Main List Area */}
       <div className={`space-y-6 transition-all duration-500 ${isDrawerOpen ? 'md:pr-[400px]' : ''}`}>
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

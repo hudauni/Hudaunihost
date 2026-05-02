@@ -13,6 +13,7 @@ import {
   where
 } from 'firebase/firestore';
 import { Bell, Send, Users, User, Clock, CheckCircle2, Loader2, Search } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 interface Notification {
   id: string;
@@ -33,6 +34,25 @@ interface UserData {
 export default function AdminNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
+
   const [users, setUsers] = useState<UserData[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -81,7 +101,7 @@ export default function AdminNotifications() {
     e.preventDefault();
     if (!title || !message) return;
     if (targetType === 'individual' && !selectedUser) {
-      alert("Please select a user");
+      showAlert('error', 'ইউজার নির্বাচন করুন', 'অনুগ্রহ করে একজন ইউজার বেছে নিন।');
       return;
     }
 
@@ -100,10 +120,10 @@ export default function AdminNotifications() {
       setSelectedUser(null);
       setSearchQuery("");
       fetchNotifications();
-      alert("Notification Sent!");
+      showAlert('success', 'সফল হয়েছে', 'নোটিফিকেশনটি সফলভাবে পাঠানো হয়েছে।');
     } catch (e) {
       console.error(e);
-      alert("Failed to send notification");
+      showAlert('error', 'ব্যর্থ হয়েছে', 'নোটিফিকেশন পাঠানো সম্ভব হয়নি।');
     } finally {
       setSubmitting(false);
     }
@@ -111,6 +131,10 @@ export default function AdminNotifications() {
 
   return (
     <div className="space-y-10 pb-20">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div>
         <h2 className="text-2xl font-bold text-white mb-1 font-bengali">নোটিফিকেশন সেন্টার</h2>
         <p className="text-white/40 text-sm">সকল ইউজার অথবা নির্দিষ্ট কাউকে নোটিফিকেশন পাঠান</p>

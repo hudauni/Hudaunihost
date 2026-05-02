@@ -16,6 +16,7 @@ import {
   orderBy
 } from 'firebase/firestore';
 import { Plus, Trash2, Edit, Save, X, PlayCircle, Users, Search, CheckCircle, Loader2, AlertCircle, Check } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 interface ClassItem {
   title: string;
@@ -33,6 +34,25 @@ interface PaidCourse {
 export default function PaidCoursesAdmin() {
   const [courses, setCourses] = useState<PaidCourse[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
+
   const [isAdding, setIsAdding] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editCourseId, setEditCourseId] = useState<string | null>(null);
@@ -146,15 +166,16 @@ export default function PaidCoursesAdmin() {
   };
 
   const handleDeleteCourse = async (id: string) => {
-    if (!confirm("আপনি কি নিশ্চিতভাবে এই কোর্সটি ডিলিট করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, "paidCourses", id));
-      showToast("কোর্সটি ডিলিট করা হয়েছে");
-      fetchCourses();
-    } catch (e) {
-      console.error(e);
-      showToast("ডিলিট করতে সমস্যা হয়েছে", "error");
-    }
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই কোর্সটি ডিলিট করতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "paidCourses", id));
+        showToast("কোর্সটি ডিলিট করা হয়েছে");
+        fetchCourses();
+      } catch (e) {
+        console.error(e);
+        showToast("ডিলিট করতে সমস্যা হয়েছে", "error");
+      }
+    });
   };
 
   const handleSearchUser = async () => {
@@ -175,7 +196,7 @@ export default function PaidCoursesAdmin() {
         if (!snapEmail.empty) {
           setFoundUser({ id: snapEmail.docs[0].id, ...snapEmail.docs[0].data() });
         } else {
-          alert("User not found");
+          showAlert('error', 'পাওয়া যায়নি', 'ইউজার খুঁজে পাওয়া যায়নি।');
         }
       }
     } catch (e) {
@@ -216,6 +237,10 @@ export default function PaidCoursesAdmin() {
 
   return (
     <div className="space-y-8 relative">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       {/* Custom Toast Notification */}
       {toast && (
         <div className="fixed top-10 right-10 z-[100] animate-in fade-in slide-in-from-right-4 duration-300">

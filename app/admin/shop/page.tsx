@@ -4,12 +4,31 @@ import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, getDocs, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { Plus, Trash2, Package, Loader2, Image as ImageIcon, X, Link as LinkIcon } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 export default function AdminShopPage() {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   // Form State
   const [name, setName] = useState('');
@@ -34,7 +53,7 @@ export default function AdminShopPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!imageUrl) return alert("প্রোডাক্ট ইমেজের লিঙ্ক দিন");
+    if (!imageUrl) return showAlert('error', 'অসম্পূর্ণ তথ্য', 'প্রোডাক্ট ইমেজের লিঙ্ক দিন।');
 
     setSaving(true);
     try {
@@ -52,26 +71,34 @@ export default function AdminShopPage() {
       setImageUrl('');
       setIsAdding(false);
       fetchProducts();
+      showAlert('success', 'সফল হয়েছে', 'প্রোডাক্টটি সফলভাবে যোগ করা হয়েছে।');
     } catch (e) {
       console.error(e);
-      alert("Error adding product");
+      showAlert('error', 'ব্যর্থ হয়েছে', 'প্রোডাক্ট যোগ করা সম্ভব হয়নি।');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("আপনি কি নিশ্চিতভাবে এই প্রোডাক্টটি ডিলিট করতে চান?")) return;
-    try {
-      await deleteDoc(doc(db, "shopProducts", id));
-      fetchProducts();
-    } catch (e) {
-      console.error(e);
-    }
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই প্রোডাক্টটি ডিলিট করতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "shopProducts", id));
+        fetchProducts();
+        showAlert('success', 'সফল হয়েছে', 'প্রোডাক্টটি ডিলিট করা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'প্রোডাক্টটি ডিলিট করা সম্ভব হয়নি।');
+      }
+    });
   };
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">

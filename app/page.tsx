@@ -167,7 +167,7 @@ export default function HomePage() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen w-full bg-[#001a1a] flex flex-col font-sans">
+    <div className="min-h-screen w-full bg-[#001a1a] flex flex-col font-sans" suppressHydrationWarning>
       <Navbar />
 
       <main className="relative flex-1 w-full flex flex-col items-center lg:pt-[73px]">
@@ -231,7 +231,7 @@ export default function HomePage() {
               <div className="flex flex-col items-center space-y-3 w-full mt-2">
                 {menuItems.map((item) => {
                   const isHierarchy = item.type === 'hierarchy';
-                  const href = isHierarchy ? `/explore/?id=${item.id}` : (item.href.endsWith('/') ? item.href : `${item.href}/`);
+                  const href = isHierarchy ? `/explore/category/?id=${item.id}` : (item.href.endsWith('/') ? item.href : `${item.href}/`);
                   return (
                     <Link
                       key={item.id}

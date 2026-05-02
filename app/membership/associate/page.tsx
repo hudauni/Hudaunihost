@@ -85,7 +85,7 @@ export default function AssociateSyllabusPage() {
     if (task.title === "নিয়মিত সদকা করা") {
       router.push('/sadaka');
     } else {
-      router.push(`/membership/associate/${task.id}`);
+      router.push(`/membership/associate/task/?id=${task.id}`);
     }
   };
 

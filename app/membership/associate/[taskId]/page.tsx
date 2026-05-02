@@ -5,5 +5,8 @@ export default function Page() {
 }
 
 export function generateStaticParams() {
-  return [{ taskId: '1' }];
+  // Provide a range of possible task IDs for static export
+  return Array.from({ length: 20 }, (_, i) => ({
+    taskId: (i + 1).toString(),
+  }));
 }

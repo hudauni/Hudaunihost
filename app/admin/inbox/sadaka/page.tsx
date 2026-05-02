@@ -12,6 +12,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { Check, X, Trash2, Clock, User, Hash, Phone, Wallet } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 interface SadakaRequest {
   id: string;
@@ -29,6 +30,24 @@ export default function AdminSadakaInbox() {
   const [requests, setRequests] = useState<SadakaRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalAmount, setTotalAmount] = useState(0);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   useEffect(() => {
     fetchRequests();
@@ -57,15 +76,24 @@ export default function AdminSadakaInbox() {
     try {
       await updateDoc(doc(db, "sadakaRequests", id), { status });
       fetchRequests();
+      showAlert('success', status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত', `সাদকা অনুরোধটি সফলভাবে ${status === 'approved' ? 'অ্যাপ্রুভ' : 'ডিক্লাইন'} করা হয়েছে।`);
     } catch (e) {
       console.error(e);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'স্ট্যাটাস আপডেট করা সম্ভব হয়নি।');
     }
   };
 
   const deleteRequest = async (id: string) => {
-    if (!confirm("Delete this record?")) return;
-    await deleteDoc(doc(db, "sadakaRequests", id));
-    fetchRequests();
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই রেকর্ডটি মুছে ফেলতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "sadakaRequests", id));
+        fetchRequests();
+        showAlert('success', 'সফল হয়েছে', 'রেকর্ডটি মুছে ফেলা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'রেকর্ড মুছে ফেলা সম্ভব হয়নি।');
+      }
+    });
   };
 
   if (loading) {
@@ -74,6 +102,10 @@ export default function AdminSadakaInbox() {
 
   return (
     <div className="space-y-10">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h2 className="text-3xl font-bold text-white mb-2 font-bengali">সাদকা ইনবক্স</h2>

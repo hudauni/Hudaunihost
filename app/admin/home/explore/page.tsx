@@ -10,6 +10,7 @@ import {
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Plus, Trash2, Edit2, Save, ArrowLeft, Loader2, PlayCircle, Info, Zap, Video, Layout } from 'lucide-react';
 import Link from 'next/link';
+import AdminAlert from '@/components/AdminAlert';
 
 function AdminExploreContent() {
   const searchParams = useSearchParams();
@@ -21,6 +22,24 @@ function AdminExploreContent() {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   // Form State for Buttons
   const [newTitle, setNewTitle] = useState("");
@@ -114,21 +133,39 @@ function AdminExploreContent() {
   };
 
   const handleDeleteService = async (sId: string) => {
-    if (!confirm("Are you sure?")) return;
-    await deleteDoc(doc(db, "exploreMenu", selectedButtonId!, "services", sId));
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই সার্ভিসটি মুছে ফেলতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "exploreMenu", selectedButtonId!, "services", sId));
+        showAlert('success', 'সফল হয়েছে', 'সার্ভিসটি মুছে ফেলা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'সার্ভিসটি মুছে ফেলা সম্ভব হয়নি।');
+      }
+    });
   };
 
   const handleDeleteSub = async (subId: string) => {
-    if (!confirm("Delete this button and all its contents?")) return;
-    await deleteDoc(doc(db, "exploreMenu", subId));
-    if (selectedButtonId === subId) setSelectedButtonId(null);
-    fetchData();
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই বাটনটি এবং এর ভেতরের সব কন্টেন্ট মুছে ফেলতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "exploreMenu", subId));
+        if (selectedButtonId === subId) setSelectedButtonId(null);
+        fetchData();
+        showAlert('success', 'সফল হয়েছে', 'বাটনটি মুছে ফেলা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'বাটনটি মুছে ফেলা সম্ভব হয়নি।');
+      }
+    });
   };
 
   if (loading) return <div className="p-20 text-emerald-500 animate-pulse font-bold">লোড হচ্ছে...</div>;
 
   return (
     <div className="space-y-10 pb-20">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex items-center gap-4">
         <Link href="/admin/home">
           <button className="p-3 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all">

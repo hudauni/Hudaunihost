@@ -9,6 +9,7 @@ import {
 } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, Save, Loader2, RefreshCw, Video, List, GripVertical } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import AdminAlert from '@/components/AdminAlert';
 
 export default function AdminHomeManagement() {
   const [activeTab, setActiveTab] = useState<'buttons' | 'videos'>('buttons');
@@ -17,6 +18,24 @@ export default function AdminHomeManagement() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isBrowser, setIsBrowser] = useState(false);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   // Button Form
   const [newTitle, setNewTitle] = useState("");
@@ -68,6 +87,7 @@ export default function AdminHomeManagement() {
       { title: "সাফল্যের জন্য দক্ষতা", href: "/skills", type: 'link' },
       { title: "সকল সেবা", href: "/services", type: 'link' },
       { title: "কাউন্সিলিং প্রয়োজন", href: "/counseling", type: 'link' },
+      { title: "প্রতি শুক্রবার স্মরণিকা অনলাইন লাইভ ক্লাস", href: "/live-class", type: 'link' },
       { title: "হুদা ইউনি এর লক্ষ্য-উদ্দেশ্য", href: "/goals", type: 'link' },
       { title: "সাদকা প্রদান", href: "/sadaka", type: 'link' },
     ];
@@ -93,7 +113,7 @@ export default function AdminHomeManagement() {
         order: menuItems.length + 1
       });
 
-      const finalHref = newType === 'link' ? newHref : `/explore/?id=${docRef.id}`;
+      const finalHref = newType === 'link' ? newHref : `/explore/category/?id=${docRef.id}`;
       await updateDoc(docRef, { href: finalHref });
 
       setNewTitle(""); setNewHref(""); setNewType('link');
@@ -153,7 +173,7 @@ export default function AdminHomeManagement() {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = newVUrl.match(regExp);
     const videoId = (match && match[2].length === 11) ? match[2] : null;
-    if (!videoId) return alert("Invalid YouTube URL");
+    if (!videoId) return showAlert('error', 'ভুল লিঙ্ক', 'অনুগ্রহ করে একটি সঠিক ইউটিউব লিঙ্ক দিন।');
 
     setSubmitting(true);
     try {
@@ -165,14 +185,18 @@ export default function AdminHomeManagement() {
       });
       setNewVTitle(""); setNewVUrl(""); setNewVDetails("");
       fetchVideos();
-    } catch (error) { console.error(error); }
+      showAlert('success', 'সফল হয়েছে', 'ভিডিওটি সফলভাবে যোগ করা হয়েছে।');
+    } catch (error) {
+      console.error(error);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'ভিডিও যোগ করা সম্ভব হয়নি।');
+    }
     finally { setSubmitting(false); }
   };
 
   const handleUpdate = async (id: string) => {
     await updateDoc(doc(db, "homeMenu", id), {
       title: editTitle,
-      href: editType === 'link' ? editHref : `/explore/?id=${id}`,
+      href: editType === 'link' ? editHref : `/explore/category/?id=${id}`,
       type: editType
     });
     setEditingId(null);
@@ -180,16 +204,22 @@ export default function AdminHomeManagement() {
   };
 
   const handleDelete = async (col: string, id: string) => {
-    if (!confirm("আইটেমটি ডিলিট করতে চান?")) return;
-    await deleteDoc(doc(db, col, id));
-    if (col === "homeMenu") fetchMenu();
-    else fetchVideos();
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি এই আইটেমটি ডিলিট করতে চান?', async () => {
+      await deleteDoc(doc(db, col, id));
+      if (col === "homeMenu") fetchMenu();
+      else fetchVideos();
+      showAlert('success', 'সফল হয়েছে', 'আইটেমটি ডিলিট করা হয়েছে।');
+    });
   };
 
   if (loading) return <div className="p-10 text-emerald-500 animate-pulse font-bold">লোড হচ্ছে...</div>;
 
   return (
     <div className="space-y-10 pb-20">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-white font-bengali">হোম পেজ ম্যানেজমেন্ট</h2>

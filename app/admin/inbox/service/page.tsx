@@ -12,6 +12,7 @@ import {
   deleteDoc
 } from 'firebase/firestore';
 import { Check, X, Trash2, Clock, User, Hash, CreditCard, Loader2, BookOpen, Phone, Briefcase } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 interface ServiceRequest {
   id: string;
@@ -28,6 +29,24 @@ interface ServiceRequest {
 export default function AdminServiceInbox() {
   const [requests, setRequests] = useState<ServiceRequest[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   useEffect(() => {
     fetchRequests();
@@ -50,15 +69,24 @@ export default function AdminServiceInbox() {
     try {
       await updateDoc(doc(db, "serviceRequests", id), { status });
       fetchRequests();
+      showAlert('success', status === 'approved' ? 'অনুমোদিত' : 'প্রত্যাখ্যাত', `সার্ভিস অনুরোধটি সফলভাবে ${status === 'approved' ? 'অ্যাপ্রুভ' : 'ডিক্লাইন'} করা হয়েছে।`);
     } catch (e) {
       console.error(e);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'স্ট্যাটাস আপডেট করা সম্ভব হয়নি।');
     }
   };
 
   const deleteRequest = async (id: string) => {
-    if (!confirm("Delete this record?")) return;
-    await deleteDoc(doc(db, "serviceRequests", id));
-    fetchRequests();
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই রেকর্ডটি মুছে ফেলতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "serviceRequests", id));
+        fetchRequests();
+        showAlert('success', 'সফল হয়েছে', 'রেকর্ডটি মুছে ফেলা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'রেকর্ড মুছে ফেলা সম্ভব হয়নি।');
+      }
+    });
   };
 
   if (loading) {
@@ -67,6 +95,10 @@ export default function AdminServiceInbox() {
 
   return (
     <div className="space-y-10">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div>
         <h2 className="text-3xl font-bold text-white mb-2 font-bengali">সার্ভিস ইনবক্স</h2>
         <p className="text-white/40 text-sm">Manage service requests and verification</p>

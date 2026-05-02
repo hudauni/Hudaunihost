@@ -5,5 +5,9 @@ export default function Page() {
 }
 
 export function generateStaticParams() {
-  return [{ levelId: 'associate' }];
+  return [
+    { levelId: 'member' },
+    { levelId: 'scholar' },
+    { levelId: 'admin' }
+  ];
 }

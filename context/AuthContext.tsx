@@ -108,7 +108,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Avoid hydration mismatch by rendering a stable background first
-  if (!isClient) return <div className="min-h-screen bg-[#001a1a]" />;
+  if (!isClient) return <div className="min-h-screen bg-[#001a1a]" suppressHydrationWarning />;
 
   return (
     <AuthContext.Provider value={{ user, userData, userCollection, loading, login, loginWithEmail, logout }}>

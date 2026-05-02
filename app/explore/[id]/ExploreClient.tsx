@@ -3,16 +3,19 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import { ArrowLeft, Loader2, ChevronRight, BookOpen } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-export default function ExploreClient() {
-  const { id } = useParams();
+export default function ExploreClient({ isQueryParam = false }: { isQueryParam?: boolean }) {
+  const params = useParams();
+  const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
+
+  const id = isQueryParam ? searchParams.get('id') : params.id;
 
   const [category, setCategory] = useState<any>(null);
   const [buttons, setButtons] = useState<any[]>([]);

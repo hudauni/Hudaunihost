@@ -13,6 +13,7 @@ import {
   serverTimestamp
 } from 'firebase/firestore';
 import { Flag, Plus, Trash2, ExternalLink, Play } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 interface GoalVideo {
   id: string;
@@ -24,6 +25,25 @@ interface GoalVideo {
 export default function AdminGoals() {
   const [videos, setVideos] = useState<GoalVideo[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
+
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -59,7 +79,7 @@ export default function AdminGoals() {
     const videoId = getYoutubeId(url);
 
     if (!videoId) {
-      alert("Invalid YouTube URL");
+      showAlert('error', 'ভুল লিঙ্ক', 'অনুগ্রহ করে একটি সঠিক ইউটিউব ভিডিও লিঙ্ক দিন।');
       return;
     }
 
@@ -74,26 +94,34 @@ export default function AdminGoals() {
       setTitle("");
       setUrl("");
       fetchVideos();
+      showAlert('success', 'সফল হয়েছে', 'ভিডিওটি সফলভাবে যোগ করা হয়েছে।');
     } catch (error) {
       console.error("Error adding video:", error);
-      alert("Failed to add video");
+      showAlert('error', 'ব্যর্থ হয়েছে', 'ভিডিও যোগ করা সম্ভব হয়নি।');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this video?")) return;
-    try {
-      await deleteDoc(doc(db, "goalsVideos", id));
-      fetchVideos();
-    } catch (error) {
-      console.error("Error deleting video:", error);
-    }
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই ভিডিওটি ডিলিট করতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "goalsVideos", id));
+        fetchVideos();
+        showAlert('success', 'সফল হয়েছে', 'ভিডিওটি ডিলিট করা হয়েছে।');
+      } catch (error) {
+        console.error("Error deleting video:", error);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'ভিডিও ডিলিট করা সম্ভব হয়নি।');
+      }
+    });
   };
 
   return (
     <div className="space-y-8">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-bold text-white mb-1 font-bengali">লক্ষ্য ও উদ্দেশ্য</h2>

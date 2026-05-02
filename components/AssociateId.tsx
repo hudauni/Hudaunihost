@@ -9,16 +9,28 @@ interface AssociateIdProps {
 
 export default function AssociateId({ className }: AssociateIdProps) {
   const { userData } = useAuth();
+  const [displayId, setDisplayId] = React.useState<string | null>(null);
 
-  // Use cached ID if Firestore data is still loading
-  const displayId = userData?.associateId || (typeof window !== 'undefined' ? localStorage.getItem('cached_associate_id') : null);
+  React.useEffect(() => {
+    // 1. Priority: Live data from AuthContext
+    if (userData?.associateId) {
+      setDisplayId(userData.associateId);
+      return;
+    }
+
+    // 2. Fallback: Cached data from LocalStorage
+    const cached = localStorage.getItem('cached_associate_id');
+    if (cached) {
+      setDisplayId(cached);
+    }
+  }, [userData?.associateId]);
 
   if (!displayId) {
-    return <span className={className}>----</span>;
+    return <span className={className} suppressHydrationWarning>----</span>;
   }
 
   return (
-    <span className={className}>
+    <span className={className} suppressHydrationWarning>
       {displayId}
     </span>
   );

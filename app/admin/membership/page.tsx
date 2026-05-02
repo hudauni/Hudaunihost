@@ -7,6 +7,7 @@ import {
   query, where, serverTimestamp, updateDoc, setDoc
 } from 'firebase/firestore';
 import { Plus, Trash2, Edit2, X, Settings2 } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 export default function AdminMembership() {
   const [levels, setLevels] = useState<any[]>([]);
@@ -18,6 +19,24 @@ export default function AdminMembership() {
 
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   // Form states
   const [newVideoTitle, setNewVideoTitle] = useState("");
@@ -93,23 +112,35 @@ export default function AdminMembership() {
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = newVideoUrl.match(regExp);
     const videoId = (match && match[2].length === 11) ? match[2] : null;
-    if (!videoId) return alert("Invalid URL");
+    if (!videoId) return showAlert('error', 'ভুল লিঙ্ক', 'অনুগ্রহ করে একটি সঠিক ইউটিউব লিঙ্ক দিন।');
 
     await addDoc(collection(db, "membershipVideos"), { title: newVideoTitle, youtubeId: videoId, taskId: selectedTaskId, levelId: selectedLevelId, order: videos.length + 1, createdAt: serverTimestamp() });
     setNewVideoTitle(""); setNewVideoUrl("");
     fetchVideos();
+    showAlert('success', 'সফল হয়েছে', 'ভিডিওটি সফলভাবে যোগ করা হয়েছে।');
   };
 
   const deleteItem = async (col: string, id: string) => {
-    if (!confirm("ডিলিট করতে নিশ্চিত?")) return;
-    await deleteDoc(doc(db, col, id));
-    if (col === "membershipLevels") fetchLevels();
-    else if (col === "membershipTasks") fetchTasks();
-    else fetchVideos();
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই আইটেমটি ডিলিট করতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, col, id));
+        if (col === "membershipLevels") fetchLevels();
+        else if (col === "membershipTasks") fetchTasks();
+        else fetchVideos();
+        showAlert('success', 'সফল হয়েছে', 'আইটেমটি ডিলিট করা হয়েছে।');
+      } catch (e) {
+        console.error(e);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'ডিলিট করা সম্ভব হয়নি।');
+      }
+    });
   };
 
   return (
     <div className="space-y-10 pb-20">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex justify-between items-center">
         <h2 className="text-3xl font-bold text-white font-bengali">মেম্বারশিপ ম্যানেজমেন্ট</h2>
         <div className="flex gap-2">

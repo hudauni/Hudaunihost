@@ -14,6 +14,7 @@ import {
   updateDoc
 } from 'firebase/firestore';
 import { Video, Plus, Trash2, Edit2, X, Save, Play, Info } from 'lucide-react';
+import AdminAlert from '@/components/AdminAlert';
 
 interface Course {
   id: string;
@@ -28,6 +29,24 @@ export default function AdminCourses() {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  // Alert state
+  const [alertConfig, setAlertConfig] = useState<{
+    isOpen: boolean;
+    type: 'success' | 'error' | 'confirm' | 'info';
+    title: string;
+    message: string;
+    onConfirm?: () => void;
+  }>({
+    isOpen: false,
+    type: 'success',
+    title: '',
+    message: ''
+  });
+
+  const showAlert = (type: 'success' | 'error' | 'confirm' | 'info', title: string, message: string, onConfirm?: () => void) => {
+    setAlertConfig({ isOpen: true, type, title, message, onConfirm });
+  };
 
   // Form states
   const [title, setTitle] = useState("");
@@ -67,7 +86,7 @@ export default function AdminCourses() {
     const videoId = getYoutubeId(url);
 
     if (!videoId) {
-      alert("Invalid YouTube URL");
+      showAlert('error', 'ভুল লিঙ্ক', 'অনুগ্রহ করে একটি সঠিক ইউটিউব ভিডিও লিঙ্ক দিন।');
       return;
     }
 
@@ -93,22 +112,26 @@ export default function AdminCourses() {
 
       closeModal();
       fetchCourses();
+      showAlert('success', 'সফল হয়েছে', editingId ? 'কোর্সটি আপডেট করা হয়েছে।' : 'নতুন কোর্স যোগ করা হয়েছে।');
     } catch (error) {
       console.error("Error saving course:", error);
-      alert("Failed to save course");
+      showAlert('error', 'ব্যর্থ হয়েছে', 'কোর্স সেভ করা সম্ভব হয়নি।');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this course?")) return;
-    try {
-      await deleteDoc(doc(db, "courses", id));
-      fetchCourses();
-    } catch (error) {
-      console.error("Error deleting course:", error);
-    }
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি নিশ্চিতভাবে এই কোর্সটি ডিলিট করতে চান?', async () => {
+      try {
+        await deleteDoc(doc(db, "courses", id));
+        fetchCourses();
+        showAlert('success', 'সফল হয়েছে', 'কোর্সটি ডিলিট করা হয়েছে।');
+      } catch (error) {
+        console.error("Error deleting course:", error);
+        showAlert('error', 'ব্যর্থ হয়েছে', 'কোর্সটি ডিলিট করা সম্ভব হয়নি।');
+      }
+    });
   };
 
   const openModal = (course?: Course) => {
@@ -135,6 +158,10 @@ export default function AdminCourses() {
 
   return (
     <div className="space-y-8">
+      <AdminAlert
+        {...alertConfig}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
       <div className="flex justify-between items-end">
         <div>
           <h2 className="text-2xl font-bold text-white mb-1 font-bengali">কোর্সসমূহ</h2>

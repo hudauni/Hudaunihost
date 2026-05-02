@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ChevronLeft, Send, CheckCircle2, Loader2, BookOpen, Play } from 'lucide-react';
+import { ChevronLeft, Send, CheckCircle2, Loader2, BookOpen, Play, Copy, Check } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -20,23 +20,41 @@ function EnrollContent() {
   const [senderNumber, setSenderNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [enrollVideoId, setEnrollVideoId] = useState<string | null>(null);
+  const [enrollSteps, setEnrollSteps] = useState<{ id: string; type: 'text' | 'number'; text?: string; number?: string }[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchVideo() {
+    async function fetchData() {
       try {
         const settingsSnap = await getDoc(doc(db, "settings", "general"));
         if (settingsSnap.exists()) {
-          setEnrollVideoId(settingsSnap.data().enrollVideoId || null);
+          const data = settingsSnap.data();
+          setEnrollVideoId(data.enrollVideoId || null);
+          setEnrollSteps(data.enrollSteps || []);
         }
       } catch (e) {
-        console.error("Error fetching enroll video:", e);
+        console.error("Error fetching enroll data:", e);
+      } finally {
+        setDataLoading(false);
       }
     }
-    fetchVideo();
+    fetchData();
   }, []);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const toBengaliNumber = (num: number | string) => {
+    const digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return num.toString().split('').map(d => digits[parseInt(d)] || d).join('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,6 +136,10 @@ function EnrollContent() {
     );
   };
 
+  if (dataLoading) {
+    return <div className="flex items-center justify-center min-h-screen text-emerald-500"><Loader2 className="animate-spin" size={40} /></div>;
+  }
+
   return (
     <main className="relative flex-1 w-full flex flex-col items-center">
       {/* --- MOBILE VERSION --- */}
@@ -143,26 +165,34 @@ function EnrollContent() {
             {!submitted ? (
               <div className="space-y-8">
                 <div className="space-y-5 text-white/90 font-bengali text-[15px] leading-relaxed">
-                  <div className="flex gap-4 items-start">
-                    <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black">১</span>
-                    <p className="pt-0.5">অ্যাপে লগইন করে <span className="text-emerald-400 font-bold">‘Send Money’</span> অপশনে ক্লিক করুন।</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                    <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black">২</span>
-                    <p className="pt-0.5">টাকা পাঠাতে <span className="text-emerald-400 font-bold tracking-wider">01977-889080</span> নম্বর লিখুন।</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                    <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black">৩</span>
-                    <p className="pt-0.5">পরিমাণে কোর্স ফি বা নির্ধারিত টাকা লিখুন।</p>
-                  </div>
-                  <div className="flex gap-4 items-start">
-                    <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black">৪</span>
-                    <p className="pt-0.5">রেফারেন্সে আপনার আইডি (<span className="text-emerald-400 font-bold">{userData?.associateId}</span>) দিন।</p>
-                  </div>
-                  <div className="flex gap-4 items-start border-t border-white/5 pt-4">
-                    <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black">৫</span>
-                    <p className="pt-0.5">পেমেন্ট সম্পন্ন হলে নিচের ফর্মটি পূরণ করে পাঠান।</p>
-                  </div>
+                  {enrollSteps.map((step, index) => (
+                    <div key={step.id || index} className="flex gap-4 items-start">
+                      <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black">
+                        {toBengaliNumber(index + 1)}
+                      </span>
+                      <div className="flex-1">
+                        <div className="pt-0.5 flex flex-wrap items-center gap-x-2">
+                          {step.type === 'text' ? (
+                            <span>{step.text}</span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                              <span className="text-emerald-400 font-bold tracking-wider font-sans">{step.number}</span>
+                              <button
+                                onClick={() => handleCopy(step.number!, `step-${index}`)}
+                                className="p-1 hover:bg-white/10 rounded transition-all text-emerald-400"
+                              >
+                                {copiedId === `step-${index}` ? <Check size={12} /> : <Copy size={12} />}
+                              </button>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {enrollSteps.length === 0 && (
+                    <p className="text-white/20 text-center text-xs">No enrollment steps configured.</p>
+                  )}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-5">
@@ -227,26 +257,30 @@ function EnrollContent() {
             {!submitted && <VideoCard />}
 
             <div className="space-y-8 text-white/80 font-bengali text-xl leading-relaxed">
-              <div className="flex gap-5 items-start">
-                <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black">১</span>
-                <p>বিকাশ/নগদ অ্যাপে লগইন করে <span className="text-emerald-400 font-bold underline underline-offset-4">‘Send Money’</span> অপশনে ক্লিক করুন।</p>
-              </div>
-              <div className="flex gap-5 items-start">
-                <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black">২</span>
-                <p>টাকা পাঠাতে <span className="text-emerald-400 font-black tracking-widest bg-white/5 px-2 py-1 rounded">01977-889080</span> এই নম্বরটি লিখুন।</p>
-              </div>
-              <div className="flex gap-5 items-start">
-                <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black">৩</span>
-                <p>পরিমাণে আপনার পাঠানোর কাঙ্ক্ষিত টাকার অ্যামাউন্ট লিখুন।</p>
-              </div>
-              <div className="flex gap-5 items-start">
-                <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black">৪</span>
-                <p>রেফারেন্স হিসেবে আপনার আইডি (<span className="text-emerald-400 font-bold">{userData?.associateId}</span>) ব্যবহার করুন।</p>
-              </div>
-              <div className="flex gap-5 items-start border-t border-white/5 pt-6">
-                <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black">৫</span>
-                <p>পেমেন্ট সম্পন্ন হলে সেন্ডার নম্বরটি ফর্মটিতে জমা দিন।</p>
-              </div>
+               {enrollSteps.map((step, index) => (
+                <div key={step.id || index} className="flex gap-5 items-start">
+                  <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black">
+                    {toBengaliNumber(index + 1)}
+                  </span>
+                  <div className="flex-1">
+                    <div className="flex flex-wrap items-center gap-x-3">
+                      {step.type === 'text' ? (
+                        <span>{step.text}</span>
+                      ) : (
+                        <span className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                          <span className="text-emerald-400 font-black tracking-widest font-sans">{step.number}</span>
+                          <button
+                            onClick={() => handleCopy(step.number!, `step-desktop-${index}`)}
+                            className="p-1.5 hover:bg-white/10 rounded transition-all text-emerald-400"
+                          >
+                            {copiedId === `step-desktop-${index}` ? <Check size={16} /> : <Copy size={16} />}
+                          </button>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
