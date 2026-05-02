@@ -28,6 +28,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Sync AssociateId to LocalStorage for offline/immediate access
+  useEffect(() => {
+    if (userData?.associateId) {
+      localStorage.setItem('cached_associate_id', userData.associateId);
+    }
+  }, [userData]);
+
   useEffect(() => {
     setIsClient(true);
 

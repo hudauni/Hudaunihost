@@ -10,13 +10,16 @@ interface AssociateIdProps {
 export default function AssociateId({ className }: AssociateIdProps) {
   const { userData } = useAuth();
 
-  if (!userData?.associateId) {
+  // Use cached ID if Firestore data is still loading
+  const displayId = userData?.associateId || (typeof window !== 'undefined' ? localStorage.getItem('cached_associate_id') : null);
+
+  if (!displayId) {
     return <span className={className}>----</span>;
   }
 
   return (
     <span className={className}>
-      {userData.associateId}
+      {displayId}
     </span>
   );
 }

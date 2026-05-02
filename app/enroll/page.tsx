@@ -42,6 +42,14 @@ function EnrollContent() {
     e.preventDefault();
     if (!user || !senderNumber || !amount) return;
 
+    // Strict Associate ID check before submission
+    const finalAssociateId = userData?.associateId || (typeof window !== 'undefined' ? localStorage.getItem('cached_associate_id') : null);
+
+    if (!finalAssociateId || finalAssociateId === "N/A") {
+      alert("অ্যাসোসিয়েট আইডি পাওয়া যায়নি। দয়া করে কিছুক্ষণ অপেক্ষা করুন অথবা আবার লগইন করুন।");
+      return;
+    }
+
     setLoading(true);
     try {
       const collectionName = type === 'service' ? "serviceRequests" : "courseRequests";
@@ -49,7 +57,7 @@ function EnrollContent() {
         uid: user.uid,
         displayName: userData?.displayName || user.displayName,
         email: user.email,
-        associateId: userData?.associateId || "N/A",
+        associateId: finalAssociateId,
         role: userData?.role || "associate",
         courseName: courseTitle,
         amount: amount,

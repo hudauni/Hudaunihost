@@ -5,5 +5,7 @@ export default function Page() {
 }
 
 export function generateStaticParams() {
-  return [{ id: '1' }];
+  return Array.from({ length: 114 }, (_, i) => ({
+    id: (i + 1).toString(),
+  }));
 }

@@ -95,17 +95,11 @@ export default function ProfilePage() {
             backgroundPosition: "center",
           }}
         >
-          {/* Top Bar with Back and White Logout Icon */}
-          <div className="w-full flex justify-between items-center px-6 pt-4 relative z-50">
+          {/* Top Bar with Back */}
+          <div className="w-full flex justify-start items-center px-6 pt-4 relative z-50">
             <Link href="/" className="p-2 bg-white/10 backdrop-blur-md rounded-full text-white shadow-lg active:scale-90 transition-all">
               <ChevronLeft size={18} />
             </Link>
-            <button
-              onClick={() => logout()}
-              className="p-2.5 bg-white rounded-full text-red-600 shadow-[0_4px_10px_rgba(0,0,0,0.3),inset_0_-2px_4px_rgba(0,0,0,0.1)] active:scale-90 active:translate-y-1 transition-all border border-white/20"
-            >
-              <LogOut size={18} />
-            </button>
           </div>
 
           <div className="w-full flex flex-col items-center mt-5">
@@ -206,6 +200,14 @@ export default function ProfilePage() {
               </Link>
             </div>
           </div>
+
+          {/* Floating Logout Button - Mobile */}
+          <button
+            onClick={() => logout()}
+            className="fixed bottom-8 left-6 z-[100] p-4 bg-red-600 text-white rounded-full shadow-2xl active:scale-90 transition-all border border-white/20"
+          >
+            <LogOut size={24} />
+          </button>
         </div>
 
         {/* --- DESKTOP VERSION --- */}

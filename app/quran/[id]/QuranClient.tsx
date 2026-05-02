@@ -642,7 +642,7 @@ export default function QuranClient() {
           {loading ? ( <div className="flex justify-center pt-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div></div> ) : (
             <div className="w-full px-6 flex flex-col">
               {loadedSurahs.map((surah) => (
-                <div className="w-full flex flex-col mb-12">
+                <div key={surah.number} className="w-full flex flex-col mb-12">
                   <div className="text-center mb-8 pt-8">
                     <h2 className="text-emerald-400 text-3xl font-bold font-bengali">{BENGALI_SURAH_NAMES[surah.number] || surah.name}</h2>
                     <p className="text-white/30 text-[10px] uppercase tracking-widest leading-none mt-1">{surah.englishName}</p>
