@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 import { Play, Loader2, User, Zap, Bell, FileText, X, Info, Circle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import AssociateId from '@/components/AssociateId';
+import YouTubePlayer from '@/components/YouTubePlayer';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
@@ -259,26 +260,17 @@ export default function HomePage() {
                       data-video-id={video.youtubeId}
                       className="w-full flex-shrink-0 space-y-1.5 pt-2"
                     >
-                      <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black">
+                      <div className="w-full">
                         {playingVideoId === video.youtubeId ? (
-                          <div className="relative w-full h-full">
-                            <iframe
-                              src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
-                              title={video.title}
-                              frameBorder="0"
-                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                              allowFullScreen
-                              className="w-full h-full"
-                            ></iframe>
-
-                            {/* --- MOBILE RESPONSIVE OVERLAYS --- */}
-                            <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                            <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                            <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                            <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          </div>
+                          <YouTubePlayer
+                            videoId={video.youtubeId}
+                            autoplay={true}
+                          />
                         ) : (
-                          <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
+                          <div
+                            onClick={() => setPlayingVideoId(video.youtubeId)}
+                            className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black group cursor-pointer"
+                          >
                             <img
                               src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
                               alt={video.title}
@@ -373,25 +365,17 @@ export default function HomePage() {
                     data-video-id={video.youtubeId}
                     className="space-y-4 pt-10"
                   >
-                    <div className="relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-xl bg-black">
+                    <div className="w-full">
                       {playingVideoId === video.youtubeId ? (
-                        <div className="relative w-full h-full">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
-                            title={video.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            className="w-full h-full"
-                          ></iframe>
-
-                          <div className="absolute top-0 left-0 right-0 h-[80px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute bottom-0 left-0 right-0 h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute top-0 bottom-0 right-0 w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute top-0 bottom-0 left-0 w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                        </div>
+                        <YouTubePlayer
+                          videoId={video.youtubeId}
+                          autoplay={true}
+                        />
                       ) : (
-                        <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
+                        <div
+                          onClick={() => setPlayingVideoId(video.youtubeId)}
+                          className="relative aspect-video rounded-3xl overflow-hidden border border-white/10 shadow-xl bg-black group cursor-pointer"
+                        >
                           <img
                             src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
                             alt={video.title}

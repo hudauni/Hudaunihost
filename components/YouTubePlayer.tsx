@@ -5,6 +5,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 interface YouTubePlayerProps {
   videoId: string;
   startSeconds?: number;
+  autoplay?: boolean;
   onProgress?: (seconds: number) => void;
   onComplete?: () => void;
 }
@@ -16,12 +17,28 @@ declare global {
   }
 }
 
-export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, onComplete }: YouTubePlayerProps) {
+export default function YouTubePlayer({ videoId, startSeconds = 0, autoplay = false, onProgress, onComplete }: YouTubePlayerProps) {
   const playerRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const maxTimeWatchedRef = useRef(startSeconds);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  // Load saved progress from localStorage
+  const getInitialStartTime = useCallback(() => {
+    try {
+      const savedProgress = localStorage.getItem(`yt_progress_${videoId}`);
+      if (savedProgress) {
+        const parsed = parseFloat(savedProgress);
+        // If saved progress is more than startSeconds and not near the end (let's say 2 seconds buffer)
+        // We don't have the duration yet, but we can at least return the saved time
+        return Math.max(startSeconds, parsed);
+      }
+    } catch (e) {
+      console.error("Error reading progress from localStorage", e);
+    }
+    return startSeconds;
+  }, [videoId, startSeconds]);
 
   const startTracking = useCallback(() => {
     if (timerRef.current) clearInterval(timerRef.current);
@@ -30,6 +47,11 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
       if (playerRef.current && playerRef.current.getCurrentTime) {
         try {
           const currentTime = playerRef.current.getCurrentTime();
+
+          // Save progress every second
+          if (currentTime > 0) {
+            localStorage.setItem(`yt_progress_${videoId}`, currentTime.toString());
+          }
 
           if (currentTime > maxTimeWatchedRef.current + 3) {
             playerRef.current.seekTo(maxTimeWatchedRef.current, true);
@@ -42,7 +64,7 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
         } catch (e) {}
       }
     }, 1000);
-  }, [onProgress]);
+  }, [onProgress, videoId]);
 
   const initPlayer = useCallback(() => {
     if (!containerRef.current || !videoId || !window.YT || !window.YT.Player) return;
@@ -58,6 +80,8 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
     containerRef.current.appendChild(playerDiv);
 
     const origin = typeof window !== 'undefined' ? window.location.origin.replace(/\/$/, '') : '';
+    const startTime = getInitialStartTime();
+    maxTimeWatchedRef.current = startTime;
 
     playerRef.current = new window.YT.Player(playerDiv, {
       videoId: videoId.trim(),
@@ -65,22 +89,39 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
       height: '100%',
       host: 'https://www.youtube-nocookie.com',
       playerVars: {
-        autoplay: 0,
+        autoplay: autoplay ? 1 : 0,
         controls: 1,
         rel: 0,
         modestbranding: 1,
         playsinline: 1,
         iv_load_policy: 3,
-        start: Math.floor(startSeconds),
+        start: Math.floor(startTime),
         origin: origin,
         enablejsapi: 1,
       },
       events: {
         onReady: (event: any) => {
+          if (autoplay) {
+            // Step 1: Try to play unmuted first
+            event.target.unMute();
+            event.target.setVolume(100);
+            event.target.playVideo();
+
+            // Step 2: Check if it's actually playing after a small delay
+            // If it's not playing, it means the browser blocked unmuted autoplay.
+            setTimeout(() => {
+              const state = event.target.getPlayerState();
+              if (state !== 1 && state !== 3) {
+                event.target.mute();
+                event.target.playVideo();
+              }
+            }, 1000);
+          }
           startTracking();
         },
         onStateChange: (event: any) => {
           if (event.data === window.YT.PlayerState.ENDED) {
+            localStorage.removeItem(`yt_progress_${videoId}`);
             onComplete?.();
           }
         },
@@ -97,7 +138,6 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, onProgress, o
   }, [videoId, startSeconds, onComplete, startTracking]);
 
   useEffect(() => {
-    maxTimeWatchedRef.current = startSeconds;
     setError(null);
 
     const loadVideo = () => {
