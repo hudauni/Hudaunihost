@@ -9,29 +9,27 @@ interface AssociateIdProps {
 
 export default function AssociateId({ className }: AssociateIdProps) {
   const { userData } = useAuth();
-  const [displayId, setDisplayId] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    // 1. Priority: Live data from AuthContext
-    if (userData?.associateId) {
-      setDisplayId(userData.associateId);
-      return;
+  // Initialize state directly from localStorage if available to avoid "vanish" on reload
+  const [id, setId] = React.useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('cached_associate_id');
     }
+    return null;
+  });
 
-    // 2. Fallback: Cached data from LocalStorage
-    const cached = localStorage.getItem('cached_associate_id');
-    if (cached) {
-      setDisplayId(cached);
+  // Keep live data synced
+  React.useEffect(() => {
+    if (userData?.associateId) {
+      const liveId = userData.associateId.toString();
+      setId(liveId);
+      localStorage.setItem('cached_associate_id', liveId);
     }
   }, [userData?.associateId]);
 
-  if (!displayId) {
-    return <span className={className} suppressHydrationWarning>----</span>;
-  }
-
   return (
     <span className={className} suppressHydrationWarning>
-      {displayId}
+      {id || "----"}
     </span>
   );
 }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { Play, Loader2, User, Zap, Bell, FileText, X, Info } from 'lucide-react';
+import { Play, Loader2, User, Zap, Bell, FileText, X, Info, Circle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import AssociateId from '@/components/AssociateId';
 import { useAuth } from '@/context/AuthContext';
@@ -173,16 +173,19 @@ export default function HomePage() {
       <main className="relative flex-1 w-full flex flex-col items-center lg:pt-[73px]">
 
         {/* --- MOBILE VERSION --- */}
-        <div
-          className="lg:hidden w-full min-h-screen flex flex-col items-center bg-no-repeat overflow-hidden relative bg-[#002b2b]"
-          style={{
-            backgroundImage: "url('/images/mainimg.webp')",
-            backgroundSize: "100% 100%",
-            backgroundPosition: "center",
-          }}
-        >
-          {/* Header Action Buttons Wrapper */}
-          <div className="absolute top-6 right-6 flex items-center gap-2 z-50 p-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 shadow-2xl">
+        <div className="lg:hidden fixed inset-0 z-0 bg-[#001a1a]">
+          <div
+            className="absolute inset-0 bg-no-repeat bg-cover bg-center"
+            style={{
+              backgroundImage: "url('/images/mainimg.webp')",
+              backgroundSize: "100% 100%"
+            }}
+          ></div>
+        </div>
+
+        <div className="lg:hidden relative z-10 w-full h-screen overflow-hidden">
+          {/* Header Action Buttons Wrapper - Fixed to stay at top */}
+          <div className="fixed top-6 right-6 flex items-center gap-2 z-50 p-1.5 bg-black/40 backdrop-blur-md rounded-full border border-white/10 shadow-2xl">
             {/* Notification Icon */}
             <Link
               href="/notifications"
@@ -199,112 +202,119 @@ export default function HomePage() {
               href="/profile"
               className="p-2.5 bg-gradient-to-br from-[#d4af37] via-[#f9d71c] to-[#b8860b] rounded-full active:scale-90 transition-all shadow-lg"
             >
-              <User size={20} className="text-[#1a472a] stroke-[3]" />
+              <Circle size={20} className="text-[#1a472a] stroke-[2.5]" />
             </Link>
           </div>
 
-          <div className="w-full max-w-[360px] flex flex-col items-center z-10 px-4">
-            <div className="flex flex-col items-center pt-[90px] text-center space-y-1">
-              {logoUrl ? (
-                <div className="relative h-16 w-40 mb-2">
-                  <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+          {/* Scrollable Content Area with Vanish Effect */}
+          <div
+            className="absolute inset-0 overflow-y-auto overflow-x-hidden custom-scrollbar pt-[85px] pb-20"
+            style={{
+              maskImage: 'linear-gradient(to bottom, transparent 0, transparent 55px, black 110px)',
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, transparent 55px, black 110px)',
+            }}
+          >
+            <div className="w-full max-w-[360px] mx-auto flex flex-col items-center px-4">
+              <div className="flex flex-col items-center text-center space-y-1 w-full mb-4">
+                {logoUrl ? (
+                  <div className="relative h-16 w-40 mb-2">
+                    <img src={logoUrl} alt="Logo" className="h-full w-full object-contain" />
+                  </div>
+                ) : (
+                  <h1 className="text-3xl font-bold text-white italic tracking-tighter" style={{ fontFamily: 'serif' }}>
+                    Huda <span className="text-cyan-400">Uni</span>
+                  </h1>
+                )}
+                <div className="mt-3">
+                  <p className="text-white/90 text-[11px] font-medium font-bengali leading-relaxed">
+                    আসসালামু আলাইকুম {userData?.displayName || user?.displayName || user?.email?.split('@')[0]}!<br />
+                    আপনার অ্যাসোসিয়েট আইডি - <AssociateId className="text-cyan-300 font-bold" />
+                  </p>
                 </div>
-              ) : (
-                <h1 className="text-3xl font-bold text-white italic tracking-tighter" style={{ fontFamily: 'serif' }}>
-                  Huda <span className="text-cyan-400">Uni</span>
-                </h1>
-              )}
-              <div className="mt-3">
-                <p className="text-white/90 text-[11px] font-medium font-bengali leading-relaxed">
-                  আসসালামু আলাইকুম {userData?.displayName || user?.displayName || user?.email?.split('@')[0]}!<br />
-                  আপনার অ্যাসোসিয়েট আইডি - <AssociateId className="text-cyan-300 font-bold" />
-                </p>
               </div>
-            </div>
 
-            {/* SCROLLABLE AREA */}
-            <div
-              className="mt-2 w-full max-h-[550px] overflow-y-auto custom-scrollbar px-2 flex flex-col items-center pb-10"
-            >
-              <div className="mt-2 mb-1 shrink-0"><PrayerTimeCircle size={150} /></div>
+              {/* CONTENT AREA */}
+              <div className="mt-2 w-full flex flex-col items-center">
+                <div className="mt-2 mb-1 shrink-0"><PrayerTimeCircle size={150} /></div>
 
-              <div className="flex flex-col items-center space-y-3 w-full mt-2">
-                {menuItems.map((item) => {
-                  const isHierarchy = item.type === 'hierarchy';
-                  const href = isHierarchy ? `/explore/category/?id=${item.id}` : (item.href.endsWith('/') ? item.href : `${item.href}/`);
-                  return (
-                    <Link
-                      key={item.id}
-                      href={href}
-                      className="relative w-full max-w-[320px] py-3 px-6 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-between border border-white/10 shadow-lg active:scale-95 transition-all flex-shrink-0"
+                <div className="flex flex-col items-center space-y-3 w-full mt-2">
+                  {menuItems.map((item) => {
+                    const isHierarchy = item.type === 'hierarchy';
+                    const href = isHierarchy ? `/explore/category/?id=${item.id}` : (item.href.endsWith('/') ? item.href : `${item.href}/`);
+                    return (
+                      <Link
+                        key={item.id}
+                        href={href}
+                        className="relative w-full max-w-[320px] py-3 px-6 bg-white/5 backdrop-blur-xl rounded-full flex items-center justify-between border border-white/10 shadow-lg active:scale-95 transition-all flex-shrink-0"
+                      >
+                        <span className="text-white text-[14px] font-bold tracking-wide flex-1 text-center font-bengali">{item.title}</span>
+                      </Link>
+                    );
+                  })}
+
+                  {promoVideos.map((video) => (
+                    <div
+                      key={video.id}
+                      ref={(el) => { videoElementsRef.current[video.id] = el; }}
+                      data-video-id={video.youtubeId}
+                      className="w-full flex-shrink-0 space-y-1.5 pt-2"
                     >
-                      <span className="text-white text-[14px] font-bold tracking-wide flex-1 text-center font-bengali">{item.title}</span>
-                    </Link>
-                  );
-                })}
+                      <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black">
+                        {playingVideoId === video.youtubeId ? (
+                          <div className="relative w-full h-full">
+                            <iframe
+                              src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
+                              title={video.title}
+                              frameBorder="0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                              allowFullScreen
+                              className="w-full h-full"
+                            ></iframe>
 
-                {!isDesktop && promoVideos.map((video) => (
-                  <div
-                    key={video.id}
-                    ref={(el) => { videoElementsRef.current[video.id] = el; }}
-                    data-video-id={video.youtubeId}
-                    className="w-full flex-shrink-0 space-y-1.5 pt-2"
-                  >
-                    <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black">
-                      {playingVideoId === video.youtubeId ? (
-                        <div className="relative w-full h-full">
-                          <iframe
-                            src={`https://www.youtube.com/embed/${video.youtubeId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
-                            title={video.title}
-                            frameBorder="0"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            className="w-full h-full"
-                          ></iframe>
-
-                          {/* --- MOBILE RESPONSIVE OVERLAYS --- */}
-                          <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                          <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-                        </div>
-                      ) : (
-                        <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
-                          <img
-                            src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
-                            alt={video.title}
-                            className="w-full h-full object-cover opacity-60"
-                          />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                              <Play size={18} className="text-white fill-white ml-0.5" />
+                            {/* --- MOBILE RESPONSIVE OVERLAYS --- */}
+                            <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                            <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                            <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                            <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+                          </div>
+                        ) : (
+                          <div onClick={() => setPlayingVideoId(video.youtubeId)} className="relative w-full h-full group cursor-pointer">
+                            <img
+                              src={`https://img.youtube.com/vi/${video.youtubeId}/hqdefault.jpg`}
+                              alt={video.title}
+                              className="w-full h-full object-cover opacity-60"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-10 h-10 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                <Play size={18} className="text-white fill-white ml-0.5" />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
 
-                    <div className="w-full text-center px-4">
-                      <h4 className="text-white font-bold font-bengali text-[13px] drop-shadow-md leading-tight">{video.title}</h4>
-                    </div>
+                      <div className="w-full text-center px-4">
+                        <h4 className="text-white font-bold font-bengali text-[13px] drop-shadow-md leading-tight">{video.title}</h4>
+                      </div>
 
-                    <div className="flex gap-2 w-full">
-                      <button
-                        onClick={() => setSelectedVideoDetails({title: video.title, details: video.details})}
-                        className="flex-1 py-3 bg-black hover:bg-black/80 text-white border border-white/10 rounded-lg font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
-                      >
-                        <FileText size={14} className="text-emerald-400" /> বিবরণ
-                      </button>
+                      <div className="flex gap-2 w-full">
+                        <button
+                          onClick={() => setSelectedVideoDetails({title: video.title, details: video.details})}
+                          className="flex-1 py-3 bg-black hover:bg-black/80 text-white border border-white/10 rounded-lg font-bold text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 transition-all"
+                        >
+                          <FileText size={14} className="text-emerald-400" /> বিবরণ
+                        </button>
 
-                      <Link
-                        href={`/enroll/?course=${encodeURIComponent(video.title)}`}
-                        className="flex-[2] py-3 bg-white text-black rounded-lg font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"
-                      >
-                        <Zap size={14} fill="currentColor" /> Enroll Now
-                      </Link>
+                        <Link
+                          href={`/enroll/?course=${encodeURIComponent(video.title)}`}
+                          className="flex-[2] py-3 bg-white text-black rounded-lg font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"
+                        >
+                          <Zap size={14} fill="currentColor" /> Enroll Now
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>

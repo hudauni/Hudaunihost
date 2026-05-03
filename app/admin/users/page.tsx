@@ -28,7 +28,8 @@ import {
   ChevronRight,
   TrendingUp,
   Heart,
-  CreditCard
+  CreditCard,
+  UserPlus
 } from 'lucide-react';
 import AdminAlert from '@/components/AdminAlert';
 
@@ -72,7 +73,9 @@ export default function AdminUsersList() {
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
-  const [userStats, setUserStats] = useState({ progress: 0, totalSadaka: 0 });
+  const [userStats, setUserStats] = useState({ progress: 0, totalSadaka: 0, referralCount: 0 });
+  const [referredUsers, setReferredUsers] = useState<any[]>([]);
+  const [showReferrals, setShowReferrals] = useState(false);
 
   useEffect(() => {
     fetchUsers();
@@ -126,7 +129,15 @@ export default function AdminUsersList() {
         progress = Math.round((completedCount / totalTasksInLevel) * 100);
       }
 
-      setUserStats({ progress, totalSadaka });
+      // 3. Fetch Referral Count & List
+      const rQuery = query(collection(db, "users"), where("referredBy", "==", user.id));
+      const rSnap = await getDocs(rQuery);
+      const referralCount = rSnap.size;
+      const referrals = rSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      setUserStats({ progress, totalSadaka, referralCount });
+      setReferredUsers(referrals);
+      setShowReferrals(false); // Reset when switching users
     } catch (e) {
       console.error("Error fetching user details:", e);
     } finally {
@@ -304,6 +315,53 @@ export default function AdminUsersList() {
                   )}
                 </div>
               </div>
+
+              <div
+                onClick={() => setShowReferrals(!showReferrals)}
+                className={`p-4 bg-white/[0.03] border rounded-sm relative overflow-hidden shadow-xl cursor-pointer transition-all active:scale-[0.98] ${showReferrals ? 'border-emerald-500/50 bg-emerald-500/5' : 'border-white/5 hover:border-white/10'}`}
+              >
+                <UserPlus size={32} className="absolute -right-1 -bottom-1 text-purple-500 opacity-5" />
+                <div className="relative z-10">
+                  <div className="flex justify-between items-center mb-2">
+                    <p className="text-white/40 text-[8px] uppercase font-bold tracking-widest flex items-center gap-2">
+                      <UserPlus size={10} className="text-purple-400" /> Total Referrals
+                    </p>
+                    {userStats.referralCount > 0 && (
+                      <ChevronRight size={12} className={`text-purple-400 transition-transform ${showReferrals ? 'rotate-90' : ''}`} />
+                    )}
+                  </div>
+                  {statsLoading ? (
+                    <div className="flex justify-center py-2"><Loader2 className="animate-spin text-emerald-500" size={16} /></div>
+                  ) : (
+                    <div>
+                      <h4 className="text-white font-black text-2xl tracking-tight">{userStats.referralCount} <span className="text-[10px] font-medium opacity-40">Users</span></h4>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Referral List Details */}
+              {showReferrals && userStats.referralCount > 0 && (
+                <div className="bg-black/20 border border-white/5 rounded-sm overflow-hidden animate-in slide-in-from-top-2 duration-300">
+                  <div className="divide-y divide-white/5">
+                    {referredUsers.map((ru) => (
+                      <div key={ru.id} className="p-3 flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-[10px] text-white/40 border border-white/10">
+                          {ru.displayName?.charAt(0)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-white font-bold text-[11px] truncate">{ru.displayName}</p>
+                          <p className="text-white/30 text-[11px] truncate">{ru.email || 'No email'}</p>
+                          <div className="flex flex-wrap gap-x-3 gap-y-1 mt-0.5">
+                            {ru.associateId && <p className="text-emerald-500/60 text-[8px] font-bold">ID: {ru.associateId}</p>}
+                            {ru.referredPhone && <p className="text-purple-400/80 text-[8px] font-bold">Phone: {ru.referredPhone}</p>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Management Section - Compact */}

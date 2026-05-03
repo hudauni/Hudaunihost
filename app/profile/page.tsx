@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, User, Mail, Hash, Award, LogOut, Loader2, CheckCircle2, History, BookOpen } from 'lucide-react';
+import { ChevronLeft, User, Mail, Hash, Award, LogOut, Loader2, CheckCircle2, History, BookOpen, Users, Circle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -109,8 +109,8 @@ export default function ProfilePage() {
                 {user?.photoURL ? (
                   <img src={user.photoURL} alt="Avatar" className="w-full h-full rounded-full object-cover" />
                 ) : (
-                  <div className="w-full h-full rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-inner">
-                    <User size={35} />
+                  <div className="w-full h-full rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-inner font-bold text-3xl">
+                    {userData?.displayName?.charAt(0) || user?.displayName?.charAt(0) || 'U'}
                   </div>
                 )}
               </div>
@@ -125,7 +125,7 @@ export default function ProfilePage() {
             {/* Info Cards - Fixed Width 245px, reduced radius, 3D Vibe */}
             <div className="flex flex-col items-center space-y-3">
               <div className="w-[245px] p-2.5 bg-black/40 backdrop-blur-xl border-t border-white/20 border-l border-white/10 rounded-lg flex items-center gap-3 shadow-[0_8px_16px_rgba(0,0,0,0.4),inset_0_-2px_4px_rgba(0,0,0,0.2)]">
-                <div className="p-1.5 bg-white/5 rounded-md text-emerald-400 shadow-inner"><User size={14} /></div>
+                <div className="p-1.5 bg-white/5 rounded-md text-emerald-400 shadow-inner"><Circle size={14} /></div>
                 <div className="min-w-0 flex-1">
                   <p className="text-white/60 text-[10px] uppercase font-bold tracking-widest">Name</p>
                   <p className="text-white font-bold text-[11px] truncate">{userData?.displayName}</p>
@@ -188,6 +188,14 @@ export default function ProfilePage() {
                 <button className="w-full py-3 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:translate-y-1">
                   <BookOpen size={18} />
                   <span className="text-xs uppercase tracking-widest font-black font-bengali">কোর্স</span>
+                </button>
+              </Link>
+
+              {/* Invite Button - Mobile */}
+              <Link href="/profile/invite" className="w-[245px]">
+                <button className="w-full py-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border border-purple-500/30 rounded-lg font-bold transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95">
+                  <Circle size={18} />
+                  <span className="text-xs uppercase tracking-widest font-black font-bengali">ইনভাইট</span>
                 </button>
               </Link>
 
@@ -296,6 +304,12 @@ export default function ProfilePage() {
                   <button className="w-full px-8 py-4 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 border border-blue-500/20 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-xl">
                     <BookOpen size={20} />
                     <span className="font-bengali">মাই কোর্স</span>
+                  </button>
+                </Link>
+                <Link href="/profile/invite" className="flex-1">
+                  <button className="w-full px-8 py-4 bg-purple-600/10 hover:bg-purple-600/20 text-purple-400 border border-purple-500/20 rounded-xl font-bold transition-all flex items-center justify-center gap-3 shadow-xl">
+                    <Circle size={20} />
+                    <span className="font-bengali">ইনভাইট</span>
                   </button>
                 </Link>
                 <Link href="/profile/sadaka-history" className="flex-1">

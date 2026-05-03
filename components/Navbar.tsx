@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { User, Bell } from 'lucide-react';
+import { User, Bell, Circle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, onSnapshot, orderBy } from 'firebase/firestore';
@@ -83,7 +83,7 @@ export default function Navbar({
             href="/profile"
             className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded-full transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
           >
-            <User size={18} />
+            <Circle size={18} />
             <span className="font-medium">{buttonText}</span>
           </Link>
         </div>
