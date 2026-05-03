@@ -61,6 +61,12 @@ export default function ExploreClient({ isQueryParam = false }: { isQueryParam?:
     );
   }
 
+  const formatUrl = (url: string) => {
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('/')) return url;
+    return `/${url}`;
+  };
+
   return (
     <div className="min-h-screen bg-[#001a1a] flex flex-col font-sans">
       <Navbar showHome={true} />
@@ -87,21 +93,30 @@ export default function ExploreClient({ isQueryParam = false }: { isQueryParam?:
               No items found in this category.
             </div>
           ) : (
-            buttons.map((btn) => (
-              <Link key={btn.id} href={`/explore/content/${btn.id}`}>
-                <div className="group relative w-full py-3.5 px-6 bg-white/[0.03] backdrop-blur-3xl rounded-xl flex items-center justify-between transition-all duration-300 border border-white/10 shadow-xl hover:bg-emerald-500/[0.08] hover:border-emerald-500/30 hover:translate-x-1">
-                  <div className="flex items-center gap-4">
-                    <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                      <BookOpen size={16} />
+            buttons.map((btn) => {
+              const targetHref = formatUrl(btn.enrollUrl) || `/explore/content/?id=${btn.id}`;
+              const isExternal = targetHref.startsWith('http');
+
+              return (
+                <Link
+                  key={btn.id}
+                  href={targetHref}
+                  target={isExternal ? "_blank" : undefined}
+                >
+                  <div className="group relative w-full py-3.5 px-6 bg-white/[0.03] backdrop-blur-3xl rounded-xl flex items-center justify-between transition-all duration-300 border border-white/10 shadow-xl hover:bg-emerald-500/[0.08] hover:border-emerald-500/30 hover:translate-x-1">
+                    <div className="flex items-center gap-4">
+                      <div className="w-9 h-9 rounded-lg bg-white/5 flex items-center justify-center text-emerald-400 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                        <BookOpen size={16} />
+                      </div>
+                      <span className="text-white text-lg font-bold tracking-wide group-hover:text-emerald-400 transition-colors font-bengali">
+                        {btn.title}
+                      </span>
                     </div>
-                    <span className="text-white text-lg font-bold tracking-wide group-hover:text-emerald-400 transition-colors font-bengali">
-                      {btn.title}
-                    </span>
+                    <ChevronRight size={18} className="text-white/10 group-hover:text-emerald-400 transition-all" />
                   </div>
-                  <ChevronRight size={18} className="text-white/10 group-hover:text-emerald-400 transition-all" />
-                </div>
-              </Link>
-            ))
+                </Link>
+              );
+            })
           )}
         </div>
       </main>

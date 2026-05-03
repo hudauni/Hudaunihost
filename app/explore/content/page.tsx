@@ -23,6 +23,12 @@ function ExploreContentInner() {
   // Modal State
   const [selectedDescription, setSelectedDescription] = useState<{title: string, details: string} | null>(null);
 
+  const formatUrl = (url: string) => {
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('/')) return url;
+    return `/${url}`;
+  };
+
   const fetchData = useCallback(async () => {
     if (!id) return;
     try {
@@ -129,8 +135,8 @@ function ExploreContentInner() {
 
                     {/* Enroll Button */}
                     <Link
-                      href={card.enrollUrl || `/enroll/?type=service&course=${encodeURIComponent(card.title)}`}
-                      target={isExternalLink ? "_blank" : undefined}
+                      href={formatUrl(card.enrollUrl) || `/enroll/?type=service&course=${encodeURIComponent(card.title)}`}
+                      target={card.enrollUrl?.startsWith('http') ? "_blank" : undefined}
                       className={isVideoType ? "flex-[2]" : "w-full"}
                     >
                       <button className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-emerald-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2">

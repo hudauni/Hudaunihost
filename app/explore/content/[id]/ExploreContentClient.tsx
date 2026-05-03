@@ -19,6 +19,12 @@ export default function ExploreContentClient() {
   const [loading, setLoading] = useState(true);
   const [activeVideoIndex, setActiveVideoIndex] = useState(0);
 
+  const formatUrl = (url: string) => {
+    if (!url) return null;
+    if (url.startsWith('http') || url.startsWith('/')) return url;
+    return `/${url}`;
+  };
+
   const fetchData = useCallback(async () => {
     if (!id) return;
     try {
@@ -156,10 +162,10 @@ export default function ExploreContentClient() {
                 </div>
 
                 <Link href={
-                  content.enrollUrl && !content.enrollUrl.includes('enroll')
-                    ? content.enrollUrl
+                  content.enrollUrl
+                    ? formatUrl(content.enrollUrl) as string
                     : `/enroll?type=service&course=${encodeURIComponent(content.videoTitle || content.title)}`
-                }>
+                } target={content.enrollUrl?.startsWith('http') ? "_blank" : undefined}>
                   <button className="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-sm shadow-xl shadow-emerald-500/10 active:scale-95 transition-all flex items-center justify-center gap-3">
                     <Zap size={18} fill="currentColor" />
                     {content.enrollText || "Enroll Now"}
