@@ -375,7 +375,7 @@ export default function QuranClient() {
           }
         }
       });
-    }, { threshold: 0.5, rootMargin: '-40% 0% -40% 0%' });
+    }, { threshold: 0.1, rootMargin: '-10% 0% -10% 0%' });
 
     const elements = document.querySelectorAll('[data-ayah]');
     elements.forEach(el => progressObserver.current?.observe(el));
@@ -428,6 +428,10 @@ export default function QuranClient() {
           setNextSurahId(data.number < 114 ? data.number + 1 : null);
           setPrevSurahId(data.number > 1 ? data.number - 1 : null);
           checkDownloadStatus(params.id as string);
+
+          // Initialize the current visible ayah ref
+          currentVisibleAyahRef.current = { sId: data.number, aId: 1 };
+          lastSavedRef.current = null; // Allow auto-save to trigger for new surah
 
           // Small delay for rendering before scroll
           setTimeout(() => {
