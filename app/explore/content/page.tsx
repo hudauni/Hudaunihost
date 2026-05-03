@@ -72,52 +72,77 @@ function ExploreContentInner() {
         </div>
 
         <div className="space-y-8">
-          {services.map((card: any, idx: number) => (
-            <div
-              key={card.id}
-              className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500"
-              style={{ animationDelay: `${idx * 100}ms` }}
-            >
-              {/* Video Player Section - Reduced Aspect Ratio if needed, but video needs 16:9 */}
-              <div className="w-full aspect-video bg-black shadow-lg">
-                <YouTubePlayer videoId={card.youtubeId} key={card.youtubeId} />
-              </div>
+          {services.map((card: any, idx: number) => {
+            const isVideoType = !card.type || card.type === 'video';
+            const isExternalLink = card.enrollUrl?.startsWith('http');
 
-              {/* Content Body Section - Compact Padding */}
-              <div className="p-5 lg:p-6 space-y-4">
-                <div className="flex justify-between items-center gap-4">
-                  <div className="space-y-0.5">
-                    <p className="text-emerald-500 font-black uppercase tracking-[0.2em] text-[9px]">Module #{idx + 1}</p>
-                    <h2 className="text-xl lg:text-2xl font-bold text-white font-bengali leading-tight">
-                      {card.title}
-                    </h2>
+            return (
+              <div
+                key={card.id}
+                className="bg-white/[0.03] border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex flex-col animate-in fade-in slide-in-from-bottom-4 duration-500"
+                style={{ animationDelay: `${idx * 100}ms` }}
+              >
+                {/* Header - Shown for both types */}
+                {isVideoType ? (
+                  <div className="w-full aspect-video bg-black shadow-lg">
+                    <YouTubePlayer videoId={card.youtubeId} key={card.youtubeId} />
+                  </div>
+                ) : (
+                  <div className="p-6 lg:p-8 border-b border-white/5 bg-emerald-500/5">
+                    <div className="space-y-1">
+                      <p className="text-emerald-500 font-black uppercase tracking-[0.2em] text-[9px]">Instruction #{idx + 1}</p>
+                      <h2 className="text-2xl lg:text-3xl font-bold text-white font-bengali leading-tight">
+                        {card.title}
+                      </h2>
+                    </div>
+                  </div>
+                )}
+
+                {/* Content Body Section */}
+                <div className="p-6 lg:p-8 space-y-6">
+                  {isVideoType ? (
+                    <div className="flex justify-between items-center gap-4">
+                      <div className="space-y-0.5">
+                        <p className="text-emerald-500 font-black uppercase tracking-[0.2em] text-[9px]">Module #{idx + 1}</p>
+                        <h2 className="text-xl lg:text-2xl font-bold text-white font-bengali leading-tight">
+                          {card.title}
+                        </h2>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-white/80 leading-relaxed font-bengali text-lg whitespace-pre-wrap pb-2 border-b border-white/5">
+                      {card.details}
+                    </div>
+                  )}
+
+                  <div className="flex gap-4 pt-2">
+                    {/* Description Button - Only for Video type */}
+                    {isVideoType && (
+                      <button
+                        onClick={() => setSelectedDescription({title: card.title, details: card.details})}
+                        className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold uppercase tracking-widest text-[11px] border border-white/10 transition-all flex items-center justify-center gap-2"
+                      >
+                        <FileText size={16} className="text-emerald-400" />
+                        বিবরণ
+                      </button>
+                    )}
+
+                    {/* Enroll Button */}
+                    <Link
+                      href={card.enrollUrl || `/enroll/?type=service&course=${encodeURIComponent(card.title)}`}
+                      target={isExternalLink ? "_blank" : undefined}
+                      className={isVideoType ? "flex-[2]" : "w-full"}
+                    >
+                      <button className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-emerald-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <Zap size={16} fill="currentColor" />
+                        {card.enrollText || "ENROLL NOW"}
+                      </button>
+                    </Link>
                   </div>
                 </div>
-
-                <div className="flex gap-3 pt-2">
-                  {/* Description Button */}
-                  <button
-                    onClick={() => setSelectedDescription({title: card.title, details: card.details})}
-                    className="flex-1 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold uppercase tracking-widest text-[11px] border border-white/10 transition-all flex items-center justify-center gap-2"
-                  >
-                    <FileText size={16} className="text-emerald-400" />
-                    বিবরণ
-                  </button>
-
-                  {/* Enroll Button */}
-                  <Link
-                    href={card.enrollUrl || `/enroll/?type=service&course=${encodeURIComponent(card.title)}`}
-                    className="flex-[2]"
-                  >
-                    <button className="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl font-black uppercase tracking-widest text-[11px] shadow-xl shadow-emerald-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                      <Zap size={16} fill="currentColor" />
-                      {card.enrollText || "ENROLL NOW"}
-                    </button>
-                  </Link>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
 
           {services.length === 0 && (
             <div className="py-20 text-center">

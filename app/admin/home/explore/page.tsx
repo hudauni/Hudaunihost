@@ -49,6 +49,7 @@ function AdminExploreContent() {
   const [isAddingService, setIsAddingService] = useState(false);
 
   // New Service Form
+  const [sType, setSType] = useState<'video' | 'text'>('video');
   const [sTitle, setSTitle] = useState("");
   const [sVideo, setSVideo] = useState("");
   const [sDetails, setSDetails] = useState("");
@@ -118,8 +119,9 @@ function AdminExploreContent() {
     setSubmitting(true);
     try {
       await addDoc(collection(db, "exploreMenu", selectedButtonId, "services"), {
+        type: sType,
         title: sTitle,
-        youtubeId: videoId,
+        youtubeId: sType === 'video' ? videoId : "",
         details: sDetails,
         enrollText: sEnrollText,
         enrollUrl: sEnrollUrl,
@@ -128,7 +130,11 @@ function AdminExploreContent() {
       setSTitle(""); setSVideo(""); setSDetails("");
       setSEnrollText("Enroll Now"); setSEnrollUrl("");
       setIsAddingService(false);
-    } catch (e) { console.error(e); }
+      showAlert('success', 'সফল হয়েছে', 'সার্ভিসটি সফলভাবে যোগ করা হয়েছে।');
+    } catch (e) {
+      console.error(e);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'সার্ভিস যোগ করা সম্ভব হয়নি।');
+    }
     finally { setSubmitting(false); }
   };
 
@@ -232,22 +238,47 @@ function AdminExploreContent() {
               {isAddingService && (
                 <form onSubmit={handleAddService} className="bg-white/5 border border-emerald-500/30 p-6 rounded-sm mb-10 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
                    <div className="flex justify-between items-center mb-2">
-                     <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">New Service / Card Information</p>
-                     <button type="button" onClick={() => setIsAddingService(false)} className="text-white/20 hover:text-white"><Plus size={16} className="rotate-45" /></button>
+                     <p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest">New {sType.toUpperCase()} Information</p>
+                     <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSType('video')}
+                          className={`px-3 py-1 text-[9px] font-bold rounded-sm border ${sType === 'video' ? 'bg-emerald-500 text-white border-emerald-400' : 'text-white/40 border-white/10 hover:text-white'}`}
+                        >
+                          VIDEO
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setSType('text')}
+                          className={`px-3 py-1 text-[9px] font-bold rounded-sm border ${sType === 'text' ? 'bg-emerald-500 text-white border-emerald-400' : 'text-white/40 border-white/10 hover:text-white'}`}
+                        >
+                          TEXT ONLY
+                        </button>
+                     </div>
                    </div>
-                   <div className="grid grid-cols-2 gap-4">
+
+                   <div className={sType === 'video' ? "grid grid-cols-2 gap-4" : "block"}>
                       <div className="space-y-1">
-                        <p className="text-[9px] text-white/40 uppercase font-bold">Service Title</p>
+                        <p className="text-[9px] text-white/40 uppercase font-bold">{sType === 'video' ? 'Service Title' : 'Title'}</p>
                         <input type="text" placeholder="Title" value={sTitle} onChange={(e) => setSTitle(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali" />
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-[9px] text-white/40 uppercase font-bold">YouTube Link / ID</p>
-                        <input type="text" placeholder="Link or ID" value={sVideo} onChange={(e) => setSVideo(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50" />
-                      </div>
+                      {sType === 'video' && (
+                        <div className="space-y-1">
+                          <p className="text-[9px] text-white/40 uppercase font-bold">YouTube Link / ID</p>
+                          <input type="text" placeholder="Link or ID" value={sVideo} onChange={(e) => setSVideo(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50" />
+                        </div>
+                      )}
                    </div>
+
                    <div className="space-y-1">
                       <p className="text-[9px] text-white/40 uppercase font-bold">Description</p>
-                      <textarea placeholder="Service Details..." rows={4} value={sDetails} onChange={(e) => setSDetails(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali resize-none"></textarea>
+                      <textarea
+                        placeholder={sType === 'text' ? "বিস্তারিত টেক্সট লিখুন..." : "Service Details..."}
+                        rows={sType === 'text' ? 10 : 4}
+                        value={sDetails}
+                        onChange={(e) => setSDetails(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali resize-none"
+                      ></textarea>
                    </div>
 
                    <div className="grid grid-cols-2 gap-4">
@@ -256,8 +287,8 @@ function AdminExploreContent() {
                         <input type="text" placeholder="Enroll Now" value={sEnrollText} onChange={(e) => setSEnrollText(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-[9px] text-white/40 uppercase font-bold">Custom Enroll Link (Optional)</p>
-                        <input type="text" placeholder="Leave empty for default" value={sEnrollUrl} onChange={(e) => setSEnrollUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50" />
+                        <p className="text-[9px] text-white/40 uppercase font-bold">Custom Link (URL/Zoom/Meet)</p>
+                        <input type="text" placeholder="যেমন: https://zoom.us/j/..." value={sEnrollUrl} onChange={(e) => setSEnrollUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2.5 text-white text-sm outline-none focus:border-emerald-500/50" />
                       </div>
                    </div>
                    <button disabled={submitting} className="w-full bg-emerald-600 py-3 rounded-sm font-bold text-white hover:bg-emerald-500 disabled:opacity-50">
@@ -269,10 +300,17 @@ function AdminExploreContent() {
               <div className="space-y-4">
                 {services.map((s, idx) => (
                   <div key={s.id} className="bg-black/40 border border-white/5 p-5 rounded-sm flex gap-6 group hover:border-emerald-500/30 transition-all">
-                    <div className="w-40 aspect-video bg-black rounded-sm overflow-hidden shrink-0 relative">
-                       <img src={`https://img.youtube.com/vi/${s.youtubeId}/mqdefault.jpg`} className="w-full h-full object-cover opacity-60" alt=""/>
-                       <div className="absolute inset-0 flex items-center justify-center text-white/40"><Video size={20} /></div>
-                    </div>
+                    {s.type === 'video' ? (
+                      <div className="w-40 aspect-video bg-black rounded-sm overflow-hidden shrink-0 relative">
+                         <img src={`https://img.youtube.com/vi/${s.youtubeId}/mqdefault.jpg`} className="w-full h-full object-cover opacity-60" alt=""/>
+                         <div className="absolute inset-0 flex items-center justify-center text-white/40"><Video size={20} /></div>
+                      </div>
+                    ) : (
+                      <div className="w-40 aspect-video bg-emerald-500/5 border border-emerald-500/10 rounded-sm flex flex-col items-center justify-center text-emerald-400/20 shrink-0">
+                         <Layout size={32} />
+                         <span className="text-[8px] font-black uppercase mt-1">TEXT ONLY</span>
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                        <h4 className="text-white font-bold text-lg font-bengali mb-1">{s.title}</h4>
                        <p className="text-white/40 text-xs font-bengali line-clamp-2">{s.details}</p>
