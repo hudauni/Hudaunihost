@@ -184,16 +184,16 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, autoplay = fa
 
       {/* --- RESPONSIVE OVERLAYS --- */}
       {/* Top Protection */}
-      <div className="absolute top-0 left-0 right-0 h-[25%] z-10 bg-transparent pointer-events-none"></div>
+      <div className="absolute top-0 left-0 right-0 h-[25%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
 
-      {/* Bottom Protection - Reduced by 2% (from 20% to 18%) */}
-      <div className="absolute bottom-0 left-0 right-0 h-[18%] z-10 bg-transparent pointer-events-none"></div>
+      {/* Bottom Protection - Increased to 20% (as requested) */}
+      <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
 
       {/* Right Protection */}
-      <div className="absolute top-[25%] bottom-[18%] right-0 w-[25%] z-10 bg-transparent pointer-events-none"></div>
+      <div className="absolute top-[25%] bottom-[20%] right-0 w-[25%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
 
-      {/* Left Protection - Reduced by 40% (from 30% to 18%) */}
-      <div className="absolute top-[25%] bottom-[18%] left-0 w-[18%] z-10 bg-transparent pointer-events-none"></div>
+      {/* Left Protection - 18% */}
+      <div className="absolute top-[25%] bottom-[20%] left-0 w-[18%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
     </div>
   );
 }
