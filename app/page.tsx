@@ -236,7 +236,7 @@ export default function HomePage() {
 
               {/* CONTENT AREA */}
               <div className="mt-2 w-full flex flex-col items-center">
-                <div className="mt-2 mb-1 shrink-0"><PrayerTimeCircle size={150} /></div>
+                <div className="mt-2 mb-1 shrink-0"><PrayerTimeCircle size={180} /></div>
 
                 <div className="flex flex-col items-center space-y-3 w-full mt-2">
                   {menuItems.map((item) => {
@@ -340,7 +340,7 @@ export default function HomePage() {
                     <p className="text-white/60 text-sm font-medium font-bengali mb-1">স্বাগতম, {userData?.displayName}</p>
                     <p className="text-white/40 text-xs font-medium uppercase tracking-widest border-t border-white/10 pt-2">ID: <AssociateId className="text-emerald-400 font-bold ml-2" /></p>
                   </div>
-                  <div className="bg-white/5 border border-white/10 rounded-3xl p-4 backdrop-blur-md shadow-2xl"><PrayerTimeCircle size={120} /></div>
+                  <div className="bg-white/5 border border-white/10 rounded-3xl p-4 backdrop-blur-md shadow-2xl"><PrayerTimeCircle size={140} /></div>
                 </div>
               </div>
             </div>

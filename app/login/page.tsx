@@ -35,11 +35,15 @@ export default function LoginPage() {
     >
       <div className="w-full max-w-[320px] flex flex-col items-center space-y-10 p-8">
 
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-black text-white italic drop-shadow-lg" style={{ fontFamily: 'serif' }}>
-            Huda <span className="text-emerald-400">Uni</span>
-          </h1>
-          <p className="text-white/60 text-xs uppercase tracking-[0.2em] font-bold">Islamic University System</p>
+        <div className="text-center space-y-4">
+          <div className="relative h-20 w-48 mx-auto">
+            <img
+              src="/images/logo.png"
+              alt="Huda Uni Logo"
+              className="h-full w-full object-contain drop-shadow-2xl"
+            />
+          </div>
+          <p className="text-white/60 text-xs uppercase tracking-[0.2em] font-bold">Islamic Education System</p>
         </div>
 
         <div className="flex flex-col items-center space-y-6 w-full">
@@ -52,7 +56,7 @@ export default function LoginPage() {
           </button>
 
           <p className="text-white/60 text-[12px] text-center px-4 leading-relaxed font-bengali font-medium drop-shadow-md">
-            লগইন করার মাধ্যমে আপনি আমাদের শর্তাবলী এবং গোপনীয়তা নীতির সাথে সম্মত হচ্ছেন।
+            By logging in, you agree to our Terms and Conditions and Privacy Policy.
           </p>
         </div>
 

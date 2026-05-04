@@ -2,8 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Play, X } from 'lucide-react';
+import { ChevronLeft, Play, X, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import YouTubePlayer from '@/components/YouTubePlayer';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 
@@ -16,7 +17,7 @@ interface IslamVideo {
 export default function WhatIsIslamPage() {
   const [videos, setVideos] = useState<IslamVideo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedVideo, setSelectedVideo] = useState<string | null>(null);
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -69,18 +70,24 @@ export default function WhatIsIslamPage() {
             ) : videos.length > 0 ? (
               videos.map((video) => (
                 <div key={video.id} className="w-full max-w-[280px] flex flex-col items-center">
-                  <div
-                    onClick={() => setSelectedVideo(video.youtubeId)}
-                    className="w-full aspect-video bg-white/20 backdrop-blur-md rounded-md border border-white/30 flex items-center justify-center shadow-xl relative overflow-hidden group cursor-pointer active:scale-95 transition-transform"
-                  >
-                    <img
-                      src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
-                      alt={video.title}
-                      className="absolute inset-0 w-full h-full object-cover opacity-40"
-                    />
-                    <div className="w-12 h-12 bg-black/20 rounded-full flex items-center justify-center border border-white/20 relative z-10">
-                      <Play size={24} className="text-white fill-white/20 ml-1" />
-                    </div>
+                  <div className="w-full">
+                    {playingVideoId === video.youtubeId ? (
+                      <YouTubePlayer videoId={video.youtubeId} autoplay={true} />
+                    ) : (
+                      <div
+                        onClick={() => setPlayingVideoId(video.youtubeId)}
+                        className="w-full aspect-video bg-white/20 backdrop-blur-md rounded-md border border-white/30 flex items-center justify-center shadow-xl relative overflow-hidden group cursor-pointer active:scale-95 transition-transform"
+                      >
+                        <img
+                          src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                          alt={video.title}
+                          className="absolute inset-0 w-full h-full object-cover opacity-40"
+                        />
+                        <div className="w-12 h-12 bg-black/20 rounded-full flex items-center justify-center border border-white/20 relative z-10">
+                          <Play size={24} className="text-white fill-white/20 ml-1" />
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <p className="mt-1.5 text-black text-[13px] font-bold font-bengali text-center leading-tight">{video.title}</p>
                 </div>
@@ -125,18 +132,24 @@ export default function WhatIsIslamPage() {
               ) : videos.length > 0 ? (
                 videos.map((video) => (
                   <div key={video.id} className="flex flex-col items-center group w-full">
-                    <div
-                      onClick={() => setSelectedVideo(video.youtubeId)}
-                      className="w-full aspect-video bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-3xl border border-white/10 rounded-xl flex items-center justify-center transition-all duration-500 transform hover:-translate-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden cursor-pointer hover:border-emerald-500/30"
-                    >
-                      <img
-                        src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
-                        alt={video.title}
-                        className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="w-16 h-16 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500 shadow-emerald-500/20 relative z-10">
-                        <Play size={32} className="fill-white ml-1" />
-                      </div>
+                    <div className="w-full">
+                      {playingVideoId === video.youtubeId ? (
+                        <YouTubePlayer videoId={video.youtubeId} autoplay={true} />
+                      ) : (
+                        <div
+                          onClick={() => setPlayingVideoId(video.youtubeId)}
+                          className="w-full aspect-video bg-white/[0.03] hover:bg-white/[0.08] backdrop-blur-3xl border border-white/10 rounded-xl flex items-center justify-center transition-all duration-500 transform hover:-translate-y-3 shadow-[0_20px_50px_rgba(0,0,0,0.3)] relative overflow-hidden cursor-pointer hover:border-emerald-500/30"
+                        >
+                          <img
+                            src={`https://img.youtube.com/vi/${video.youtubeId}/mqdefault.jpg`}
+                            alt={video.title}
+                            className="absolute inset-0 w-full h-full object-cover opacity-20 group-hover:scale-110 transition-transform duration-500"
+                          />
+                          <div className="w-16 h-16 bg-emerald-600 text-white rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-500 shadow-emerald-500/20 relative z-10">
+                            <Play size={32} className="fill-white ml-1" />
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <p className="mt-5 text-emerald-100/70 text-lg font-bold group-hover:text-emerald-400 transition-colors duration-300 font-bengali text-center w-full">
                       {video.title}
@@ -156,42 +169,6 @@ export default function WhatIsIslamPage() {
             </div>
           </div>
         </div>
-
-        {/* --- VIDEO PLAYER MODAL --- */}
-        {selectedVideo && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/90 backdrop-blur-md" onClick={() => setSelectedVideo(null)}></div>
-            <div className="relative w-full max-w-4xl aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl border border-white/10 animate-in zoom-in-95 duration-300">
-              <button
-                onClick={() => setSelectedVideo(null)}
-                className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black text-white rounded-full transition-all z-[110]"
-              >
-                <X size={24} />
-              </button>
-
-              <div className="relative w-full h-full">
-                <iframe
-                  src={`https://www.youtube.com/embed/${selectedVideo}?autoplay=1&modestbranding=1&rel=0`}
-                  title="YouTube video player"
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full"
-                ></iframe>
-
-                {/* --- RESPONSIVE OVERLAYS (Colored for testing) --- */}
-                {/* Top Protection */}
-                <div className="absolute top-0 left-0 right-0 h-[30%] lg:h-[80px] z-[105] bg-red-500/20 pointer-events-auto cursor-default"></div>
-                {/* Bottom Protection */}
-                <div className="absolute bottom-0 left-0 right-0 h-[20%] lg:h-[60px] z-[105] bg-red-500/20 pointer-events-auto cursor-default"></div>
-                {/* Right Protection */}
-                <div className="absolute top-0 bottom-0 right-0 w-[30%] lg:w-[120px] z-[105] bg-blue-500/20 pointer-events-auto cursor-default"></div>
-                {/* Left Protection */}
-                <div className="absolute top-0 bottom-0 left-0 w-[30%] lg:w-[120px] z-[105] bg-blue-500/20 pointer-events-auto cursor-default"></div>
-              </div>
-            </div>
-          </div>
-        )}
       </main>
 
       <style jsx global>{`

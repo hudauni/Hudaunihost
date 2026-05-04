@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, UserPlus, Mail, Phone, Loader2, User, Award, TrendingUp, X, CheckCircle2, Users, Circle } from 'lucide-react';
+import { ChevronLeft, UserPlus, Mail, Phone, Loader2, User, Award, TrendingUp, X, CheckCircle2, Users, Circle, Info } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -22,6 +22,7 @@ export default function InvitePage() {
   const [invitedUsers, setInvitedUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [showInstruction, setShowInstruction] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   // Form State
@@ -165,7 +166,7 @@ export default function InvitePage() {
           </div>
 
           <button
-            onClick={() => setIsInviteModalOpen(true)}
+            onClick={() => setShowInstruction(true)}
             className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg active:scale-95"
           >
             <Circle size={18} />
@@ -221,6 +222,38 @@ export default function InvitePage() {
           )}
         </div>
       </main>
+
+      {/* Instruction Modal */}
+      {showInstruction && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-6 backdrop-blur-md bg-black/80 animate-in fade-in duration-300">
+          <div className="bg-[#002b2b] border border-white/10 w-full max-w-md rounded-[2rem] p-8 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-50"></div>
+
+            <div className="flex flex-col items-center text-center space-y-6">
+              <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 border border-emerald-500/20">
+                <Info size={32} />
+              </div>
+
+              <div className="space-y-4">
+                <h3 className="text-xl font-bold text-white font-bengali">আমন্ত্রণ নির্দেশিকা</h3>
+                <p className="text-white/70 font-bengali leading-relaxed text-sm">
+                  আপনি আপনার পরিজনদেরকে হুদা ইউনি'র সাথে সম্পৃক্ত করতে এই অ্যাপ টি তাদের কাছে শেয়ার করুন। এবং অ্যাপটি তাদের মোবাইলে ইন্সটল হওয়ার পরে, তারা যে ইমেইল এড্রেস দিয়ে লগইন করেছে সেই ইমেইল এড্রেসটি এখানে লিখুন এবং তার মোবাইল নাম্বার দিন।
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowInstruction(false);
+                  setIsInviteModalOpen(true);
+                }}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold font-bengali transition-all shadow-lg active:scale-95 border border-white/10"
+              >
+                বুঝেছি
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Invite Modal */}
       {isInviteModalOpen && (

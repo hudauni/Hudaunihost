@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
-import { ChevronLeft, Search, X, ArrowRight, MoreVertical, Play, Pause, User, CheckCircle2, AlertCircle, ChevronsDown, Type, Mic2, ChevronRight, BookOpen, Bookmark, BookmarkCheck, Loader2 } from 'lucide-react';
+import { ChevronLeft, Search, X, ArrowRight, MoreVertical, Play, Pause, User, CheckCircle2, AlertCircle, ChevronsDown, Type, Mic2, ChevronRight, BookOpen, Bookmark, BookmarkCheck, Loader2, ChevronDown } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
@@ -187,13 +187,33 @@ export default function QuranClient() {
   }
 
   const scrollToAyah = useCallback((sId: string | number, aId: string | number) => {
-    const elementId = window.innerWidth >= 1024 ? `ayah-desktop-${sId}-${aId}` : `ayah-${sId}-${aId}`;
-    const element = document.getElementById(elementId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setHighlightedAyah(`${sId}-${aId}`);
-      setTimeout(() => setHighlightedAyah(null), 3500);
-    }
+    const isDesktop = window.innerWidth >= 1024;
+    const elementId = isDesktop ? `ayah-desktop-${sId}-${aId}` : `ayah-${sId}-${aId}`;
+
+    // Attempt to find element multiple times as it might still be rendering
+    let attempts = 0;
+    const tryScroll = () => {
+      const element = document.getElementById(elementId);
+      if (element) {
+        // Use a slightly larger offset for desktop due to fixed header
+        const offset = isDesktop ? 150 : 100;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+
+        setHighlightedAyah(`${sId}-${aId}`);
+        setTimeout(() => setHighlightedAyah(null), 3500);
+      } else if (attempts < 10) {
+        attempts++;
+        setTimeout(tryScroll, 200);
+      }
+    };
+
+    tryScroll();
   }, []);
 
   const playAyahAudio = useCallback((ayah: Ayah, surahNum: number) => {
@@ -429,18 +449,21 @@ export default function QuranClient() {
           setPrevSurahId(data.number > 1 ? data.number - 1 : null);
           checkDownloadStatus(params.id as string);
 
-          // Initialize the current visible ayah ref
+          // Initialize the current visible ayah ref correctly for auto-save
           currentVisibleAyahRef.current = { sId: data.number, aId: 1 };
-          lastSavedRef.current = null; // Allow auto-save to trigger for new surah
+          lastSavedRef.current = null;
 
-          // Small delay for rendering before scroll
-          setTimeout(() => {
+          // Handle initial hash scroll more reliably
+          if (typeof window !== 'undefined' && window.location.hash) {
             const hash = window.location.hash;
             if (hash.startsWith('#ayah-')) {
               const parts = hash.replace('#ayah-', '').split('-');
-              if (parts.length === 2) scrollToAyah(parts[0], parts[1]);
+              if (parts.length === 2) {
+                // Ensure IDs match correctly
+                scrollToAyah(parts[0], parts[1]);
+              }
             }
-          }, 1000);
+          }
         }
       } catch (err) { console.error(err); } finally { if (isMounted) setLoading(false); }
     };
@@ -484,10 +507,36 @@ export default function QuranClient() {
         {isSearchOpen && (
           <form onSubmit={handleSearch} className="w-full max-w-md mt-4 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="flex flex-col space-y-3 bg-black/40 p-4 rounded-2xl border border-white/10 backdrop-blur-2xl shadow-2xl">
-              <div className="flex items-center justify-center space-x-3">
-                <input type="text" placeholder="সুরা (যেমন: ১)" value={surahInput} onChange={(e) => setSurahInput(e.target.value)} className="w-32 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 font-bengali" />
-                <input type="text" placeholder="আয়াত" value={ayahInput} onChange={(e) => setAyahInput(e.target.value)} className="w-24 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 font-bengali" />
-                <button type="submit" className="p-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors shadow-lg"><ArrowRight size={20} /></button>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="relative group">
+                  <select
+                    value={surahInput}
+                    onChange={(e) => setSurahInput(e.target.value)}
+                    className="w-[160px] bg-white/5 border border-white/10 rounded-lg pl-4 pr-10 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 font-bengali appearance-none cursor-pointer"
+                  >
+                    <option value="" className="bg-[#002b2b]">সুরা নির্বাচন</option>
+                    {Array.from({ length: 114 }, (_, i) => i + 1).map((id) => (
+                      <option key={id} value={id} className="bg-[#002b2b]">
+                        {toBengaliNumber(id)}. {BENGALI_SURAH_NAMES[id]}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-white/40 group-focus-within:text-emerald-500 transition-colors">
+                    <ChevronDown size={16} />
+                  </div>
+                </div>
+
+                <input
+                  type="text"
+                  placeholder="আয়াত"
+                  value={ayahInput}
+                  onChange={(e) => setAyahInput(e.target.value)}
+                  className="w-20 bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 font-bengali"
+                />
+
+                <button type="submit" className="p-2.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 transition-colors shadow-lg">
+                  <ArrowRight size={20} />
+                </button>
               </div>
             </div>
           </form>

@@ -142,7 +142,7 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
         else startTime -= 24 * 3600;
       }
 
-      const diff = nextTime - currentSeconds;
+      const diff = Math.abs(nextTime - currentSeconds);
       const totalPeriod = nextTime - startTime;
 
       const prayerKey = activeForbidden
@@ -206,20 +206,20 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
              style={{ fontSize: size * 0.11 }}>
             {timeLeft ? PRAYER_NAMES[currentPrayer] : "---"}
           </p>
-          <p className="text-white/40 font-semibold mb-1" style={{ fontSize: size * 0.055 }}>
+          <p className="text-white/40 font-semibold mb-1" style={{ fontSize: size * 0.06 }}>
             {isForbidden ? "নামাজ পড়া নিষেধ" : "শেষ হতে বাকি"}
           </p>
-          <div className="text-white font-bold leading-none flex items-center justify-center" style={{ fontSize: size * 0.11 }}>
+          <div className="text-white font-bold leading-none flex items-center justify-center" style={{ fontSize: size * 0.10 }}>
             {timeLeft ? (
               <>
-                <span className="w-[1.1em] text-center">{toBengaliNumber(timeLeft.h.toString().padStart(2, '0'))}</span>
-                <span className="mx-0.5 opacity-70 font-black">:</span>
+                <span className="w-[1.1em] text-center">{toBengaliNumber((timeLeft.h % 12 || 12).toString().padStart(2, '0'))}</span>
+                <span className="mx-1 opacity-70 font-black">:</span>
                 <span className="w-[1.1em] text-center">{toBengaliNumber(timeLeft.m.toString().padStart(2, '0'))}</span>
-                <span className="mx-0.5 opacity-70 font-black">:</span>
+                <span className="mx-1 opacity-70 font-black">:</span>
                 <span className={`${isForbidden ? 'text-red-400' : 'text-cyan-400'} w-[1.1em] text-center`}>{toBengaliNumber(timeLeft.s.toString().padStart(2, '0'))}</span>
               </>
             ) : (
-              <span className="opacity-10">০০:০০:০০</span>
+              <span className="opacity-10 text-[0.8em]">০০:০০:০০</span>
             )}
           </div>
         </div>
