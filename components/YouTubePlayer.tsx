@@ -53,14 +53,8 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, autoplay = fa
             localStorage.setItem(`yt_progress_${videoId}`, currentTime.toString());
           }
 
-          if (currentTime > maxTimeWatchedRef.current + 3) {
-            playerRef.current.seekTo(maxTimeWatchedRef.current, true);
-          } else {
-            if (currentTime > maxTimeWatchedRef.current) {
-              maxTimeWatchedRef.current = currentTime;
-            }
-            onProgress?.(currentTime);
-          }
+          maxTimeWatchedRef.current = currentTime;
+          onProgress?.(currentTime);
         } catch (e) {}
       }
     }, 1000);
@@ -101,25 +95,31 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, autoplay = fa
       },
       events: {
         onReady: (event: any) => {
+          event.target.unMute();
+          event.target.setVolume(100);
+
           if (autoplay) {
-            // Step 1: Try to play unmuted first
-            event.target.unMute();
-            event.target.setVolume(100);
             event.target.playVideo();
 
-            // Step 2: Check if it's actually playing after a small delay
-            // If it's not playing, it means the browser blocked unmuted autoplay.
+            // Check if browser blocked it, then fallback to muted
             setTimeout(() => {
-              const state = event.target.getPlayerState();
-              if (state !== 1 && state !== 3) {
+              if (event.target.getPlayerState() !== 1 && event.target.getPlayerState() !== 3) {
                 event.target.mute();
                 event.target.playVideo();
               }
-            }, 1000);
+            }, 1200);
           }
           startTracking();
         },
         onStateChange: (event: any) => {
+          // If user manually plays or browser allows, try to unmute
+          if (event.data === window.YT.PlayerState.PLAYING) {
+            // Some browsers allow unmuting after the first interaction
+            if (event.target.isMuted()) {
+              event.target.unMute();
+              event.target.setVolume(100);
+            }
+          }
           if (event.data === window.YT.PlayerState.ENDED) {
             localStorage.removeItem(`yt_progress_${videoId}`);
             onComplete?.();
@@ -182,15 +182,18 @@ export default function YouTubePlayer({ videoId, startSeconds = 0, autoplay = fa
         </div>
       )}
 
-      {/* --- RESPONSIVE OVERLAYS (Now Fully Transparent) --- */}
+      {/* --- RESPONSIVE OVERLAYS --- */}
       {/* Top Protection */}
-      <div className="absolute top-0 left-0 right-0 h-[30%] lg:h-[80px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-      {/* Bottom Protection */}
-      <div className="absolute bottom-0 left-0 right-0 h-[20%] lg:h-[60px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+      <div className="absolute top-0 left-0 right-0 h-[25%] z-10 bg-transparent pointer-events-none"></div>
+
+      {/* Bottom Protection - Reduced by 2% (from 20% to 18%) */}
+      <div className="absolute bottom-0 left-0 right-0 h-[18%] z-10 bg-transparent pointer-events-none"></div>
+
       {/* Right Protection */}
-      <div className="absolute top-0 bottom-0 right-0 w-[30%] lg:w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-      {/* Left Protection */}
-      <div className="absolute top-0 bottom-0 left-0 w-[30%] lg:w-[120px] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+      <div className="absolute top-[25%] bottom-[18%] right-0 w-[25%] z-10 bg-transparent pointer-events-none"></div>
+
+      {/* Left Protection - Reduced by 40% (from 30% to 18%) */}
+      <div className="absolute top-[25%] bottom-[18%] left-0 w-[18%] z-10 bg-transparent pointer-events-none"></div>
     </div>
   );
 }

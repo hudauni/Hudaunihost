@@ -23,6 +23,9 @@ const PRAYER_NAMES: Record<string, string> = {
   Asr: "আসর",
   Maghrib: "মাগরিব",
   Isha: "ইশা",
+  Tahajjud: "তাহাজ্জুদ",
+  Ishraq: "ইশরাক",
+  Chasht: "চাশত",
   Forbidden: "নিষিদ্ধ সময়"
 };
 
@@ -42,15 +45,41 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
   }, []);
 
   const fetchTimings = useCallback(async () => {
-    try {
-      const res = await fetch('https://api.aladhan.com/v1/timingsByCity?city=Dhaka&country=Bangladesh&method=1&school=1');
-      const data = await res.json();
-      if (data.data) {
-        setTimings(data.data.timings);
-        localStorage.setItem('prayer_timings', JSON.stringify(data.data.timings));
+    const getUrl = (lat?: number, lng?: number) => {
+      if (lat && lng) {
+        return `https://api.aladhan.com/v1/timings?latitude=${lat}&longitude=${lng}&method=1&school=1`;
       }
-    } catch (error) {
-      console.error("Failed to fetch timings:", error);
+      return 'https://api.aladhan.com/v1/timingsByCity?city=Dhaka&country=Bangladesh&method=1&school=1';
+    };
+
+    const performFetch = async (lat?: number, lng?: number) => {
+      try {
+        const res = await fetch(getUrl(lat, lng));
+        const data = await res.json();
+        if (data.data) {
+          setTimings(data.data.timings);
+          localStorage.setItem('prayer_timings', JSON.stringify(data.data.timings));
+        }
+      } catch (error) {
+        console.error("Failed to fetch timings:", error);
+      }
+    };
+
+    // Try to get user location
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          performFetch(latitude, longitude);
+        },
+        (error) => {
+          console.warn("Location access denied or error, falling back to Dhaka:", error.message);
+          performFetch(); // Fallback to Dhaka
+        },
+        { timeout: 10000 }
+      );
+    } else {
+      performFetch(); // Geolocation not supported, fallback to Dhaka
     }
   }, []);
 
@@ -74,10 +103,16 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
       const dhuhr = timeToSeconds(timings.Dhuhr);
       const maghrib = timeToSeconds(timings.Maghrib);
 
+      // সালাতের নিষিদ্ধ সময় ক্যালকুলেশন (আপনার ইমেজ অনুযায়ী সুনির্দিষ্ট অফসেট)
       const forbiddenRanges = [
+        // ১. সূর্যোদয়ের সময় (সকাল): সূর্যোদয় থেকে ১৫ মিনিট পর্যন্ত
         { start: sunrise, end: sunrise + 15 * 60 },
-        { start: dhuhr - 15 * 60, end: dhuhr },
-        { start: maghrib - 15 * 60, end: maghrib }
+
+        // ২. দ্বিপ্রহরের সময় (দুপুর): যুহর শুরুর ১৪ মিনিট আগে থেকে ১ মিনিট আগে পর্যন্ত
+        { start: dhuhr - 14 * 60, end: dhuhr - 1 * 60 },
+
+        // ৩. সূর্যাস্তের সময় (সন্ধ্যা): মাগরিব শুরুর ১৫ মিনিট আগে থেকে ১ মিনিট আগে পর্যন্ত
+        { start: maghrib - 15 * 60, end: maghrib - 1 * 60 }
       ];
 
       const activeForbidden = forbiddenRanges.find(r => currentSeconds >= r.start && currentSeconds < r.end);
@@ -85,6 +120,8 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
       const prayerSequence = [
         { name: 'Fajr', time: timeToSeconds(timings.Fajr) },
         { name: 'Sunrise', time: sunrise },
+        { name: 'Ishraq', time: sunrise + 15 * 60 }, // সূর্যোদয়ের ১৫ মিনিট পর
+        { name: 'Chasht', time: sunrise + 60 * 60 }, // সূর্যোদয়ের ৬০ মিনিট পর
         { name: 'Dhuhr', time: dhuhr },
         { name: 'Asr', time: timeToSeconds(timings.Asr) },
         { name: 'Maghrib', time: maghrib },
@@ -108,8 +145,12 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
       const diff = nextTime - currentSeconds;
       const totalPeriod = nextTime - startTime;
 
+      const prayerKey = activeForbidden
+        ? 'Forbidden'
+        : (currentIdx === -1 ? 'Tahajjud' : prayerSequence[currentIdx].name);
+
       setIsForbidden(!!activeForbidden);
-      setCurrentPrayer(activeForbidden ? 'Forbidden' : prayerSequence[currentIdx === -1 ? 5 : currentIdx].name);
+      setCurrentPrayer(prayerKey);
 
       setTimeLeft({
         h: Math.floor(diff / 3600),
