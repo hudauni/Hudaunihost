@@ -40,6 +40,7 @@ export default function QuranListPage() {
 
   // Single Page Reader State
   const [selectedSurahId, setSelectedSurahId] = useState<number | null>(null);
+  const [initialAyah, setInitialAyah] = useState<number | undefined>(undefined);
 
   useEffect(() => {
     // Check Cache first
@@ -87,7 +88,11 @@ export default function QuranListPage() {
       <QuranReader
         key={selectedSurahId}
         id={selectedSurahId}
-        onBack={() => setSelectedSurahId(null)}
+        initialAyah={initialAyah}
+        onBack={() => {
+          setSelectedSurahId(null);
+          setInitialAyah(undefined);
+        }}
       />
     );
   }
@@ -134,7 +139,10 @@ export default function QuranListPage() {
           {!loading && lastRead && (
             <div className="w-full px-6 mt-6">
               <button
-                onClick={() => setSelectedSurahId(lastRead.surahId)}
+                onClick={() => {
+                  setInitialAyah(lastRead.ayahNum);
+                  setSelectedSurahId(lastRead.surahId);
+                }}
                 className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-[#001a1a] rounded-xl font-bold flex items-center justify-center gap-3 shadow-lg shadow-emerald-500/20 transition-all active:scale-95"
               >
                 <PlayCircle size={20} fill="currentColor" className="text-emerald-900" />
@@ -207,7 +215,10 @@ export default function QuranListPage() {
             {!loading && lastRead && (
               <div className="w-full max-w-md mb-16 animate-in fade-in slide-in-from-top-4 duration-700">
                 <button
-                  onClick={() => setSelectedSurahId(lastRead.surahId)}
+                  onClick={() => {
+                    setInitialAyah(lastRead.ayahNum);
+                    setSelectedSurahId(lastRead.surahId);
+                  }}
                   className="w-full py-5 bg-emerald-500 hover:bg-emerald-400 text-[#001a1a] rounded-2xl font-black text-lg flex items-center justify-center gap-4 shadow-2xl shadow-emerald-500/30 transition-all hover:-translate-y-1 active:scale-95 group"
                 >
                   <PlayCircle size={28} fill="currentColor" className="text-emerald-900 group-hover:scale-110 transition-transform" />

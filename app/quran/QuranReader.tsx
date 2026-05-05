@@ -45,7 +45,7 @@ const BENGALI_SURAH_NAMES: Record<number, string> = {
   111: "আল লাহাব", 112: "আল ইখলাস", 113: "আল ফালাক্ব", 114: "আন নাস"
 };
 
-export default function QuranReader({ id, onBack }: { id: number, onBack: () => void }) {
+export default function QuranReader({ id, initialAyah, onBack }: { id: number, initialAyah?: number, onBack: () => void }) {
   const { user, userCollection } = useAuth();
 
   const [currentSurahId, setCurrentSurahId] = useState(id);
@@ -68,7 +68,7 @@ export default function QuranReader({ id, onBack }: { id: number, onBack: () => 
   const [highlightedAyah, setHighlightedAyah] = useState<string | null>(null);
 
   const currentVisibleAyahRef = useRef<{sId: number, aId: number} | null>(null);
-  const targetAyahScrollRef = useRef<number | null>(null);
+  const targetAyahScrollRef = useRef<number | null>(initialAyah || null);
   const [isSaving, setIsSaving] = useState(false);
   const [justSaved, setJustSaved] = useState(false);
 
