@@ -148,18 +148,7 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              {/* Last Read Quran - Mobile */}
-              {userData?.lastRead && (
-                <Link href={`/quran/${userData.lastRead.surahId}#ayah-${userData.lastRead.surahId}-${userData.lastRead.ayahNum}`} className="w-[245px] p-2.5 bg-emerald-500/10 backdrop-blur-xl border-t border-white/20 border-l border-white/10 rounded-lg flex items-center gap-3 shadow-[0_8px_16px_rgba(0,0,0,0.4),inset_0_-2px_4px_rgba(0,0,0,0.2)] hover:bg-emerald-500/20 transition-all group">
-                  <div className="p-1.5 bg-white/5 rounded-md text-emerald-400 shadow-inner group-hover:scale-110 transition-transform"><BookOpen size={14} /></div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-white/60 text-[10px] uppercase font-bold tracking-widest">Last Read (Quran)</p>
-                    <p className="text-white font-bold text-[11px] truncate font-bengali">
-                      {userData.lastRead.surahName} (আয়াত {userData.lastRead.ayahNum})
-                    </p>
-                  </div>
-                </Link>
-              )}
+
 
               {/* Progress Card - Based on individual videos */}
               <div className="w-[245px] p-4 bg-gradient-to-br from-[#1a472a]/60 to-[#001a1a]/60 backdrop-blur-xl border-t border-white/20 border-l border-white/10 rounded-lg relative overflow-hidden shadow-[0_15px_30px_rgba(0,0,0,0.5),inset_0_-2px_6px_rgba(0,0,0,0.3)]">

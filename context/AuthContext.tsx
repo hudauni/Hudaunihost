@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, signInWithPopup, signInWithEmailAndPassword, signOut, User, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { auth, googleProvider, db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import { useRouter, usePathname } from 'next/navigation';
 import { Capacitor } from '@capacitor/core';
 
@@ -44,15 +44,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (firebaseUser) {
           setUser(firebaseUser);
 
-          // Background fetch user data
+          // 1. Check if user is an admin
           const adminRef = doc(db, "admins", firebaseUser.uid);
           const adminSnap = await getDoc(adminRef);
-          const col = adminSnap.exists() ? 'admins' : 'users';
-          setUserCollection(col);
 
-          const userDoc = await getDoc(doc(db, col, firebaseUser.uid));
-          if (userDoc.exists()) {
-            setUserData(userDoc.data());
+          if (adminSnap.exists()) {
+            setUserCollection('admins');
+            setUserData(adminSnap.data());
+          } else {
+            setUserCollection('users');
+            // 2. Check if user exists in 'users' collection
+            const userRef = doc(db, "users", firebaseUser.uid);
+            const userSnap = await getDoc(userRef);
+
+            if (userSnap.exists()) {
+              setUserData(userSnap.data());
+            } else {
+              // 3. New User: Initialize Profile
+              await initializeNewUser(firebaseUser);
+            }
           }
         } else {
           setUser(null);
@@ -70,6 +80,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setLoading(false);
       }
     });
+
+    const initializeNewUser = async (firebaseUser: User) => {
+      try {
+        // Generate associateId (Find max existing + 1)
+        const q = query(collection(db, "users"), orderBy("associateId", "desc"), limit(1));
+        const snap = await getDocs(q);
+        let nextId = 10001;
+
+        if (!snap.empty) {
+          const lastUser = snap.docs[0].data();
+          const lastId = parseInt(lastUser.associateId);
+          if (!isNaN(lastId)) {
+            nextId = lastId + 1;
+          }
+        }
+
+        const newUser = {
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || "New User",
+          email: firebaseUser.email,
+          photoURL: firebaseUser.photoURL || "",
+          role: "associate",
+          associateId: nextId,
+          createdAt: new Date().toISOString(),
+        };
+
+        await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+        setUserData(newUser);
+      } catch (err) {
+        console.error("Error initializing new user:", err);
+      }
+    };
 
     // Initialize Native Google Auth
     if (Capacitor.isNativePlatform()) {
