@@ -51,10 +51,29 @@ const BENGALI_SURAH_NAMES: Record<number, string> = {
   111: "আল লাহাব", 112: "আল ইখলাস", 113: "আল ফালাক্ব", 114: "আন নাস"
 };
 
+const SURAH_AYAH_COUNTS: Record<number, number> = {
+  1: 7, 2: 286, 3: 200, 4: 176, 5: 120, 6: 165, 7: 206, 8: 75, 9: 129, 10: 109,
+  11: 123, 12: 111, 13: 43, 14: 52, 15: 99, 16: 128, 17: 111, 18: 110, 19: 98, 20: 135,
+  21: 112, 22: 78, 23: 118, 24: 64, 25: 77, 26: 227, 27: 93, 28: 88, 29: 69, 30: 60,
+  31: 34, 32: 30, 33: 73, 34: 54, 35: 45, 36: 83, 37: 182, 38: 88, 39: 75, 40: 85,
+  41: 54, 42: 53, 43: 89, 44: 59, 45: 37, 46: 35, 47: 38, 48: 29, 49: 18, 50: 45,
+  51: 60, 52: 49, 53: 62, 54: 55, 55: 78, 56: 96, 57: 29, 58: 22, 59: 24, 60: 13,
+  61: 14, 62: 11, 63: 11, 64: 18, 65: 12, 66: 12, 67: 30, 68: 52, 69: 52, 70: 44,
+  71: 28, 72: 28, 73: 20, 74: 56, 75: 40, 76: 31, 77: 50, 78: 40, 79: 46, 80: 42,
+  81: 29, 82: 19, 83: 36, 84: 25, 85: 22, 86: 17, 87: 19, 88: 26, 89: 30, 90: 20,
+  91: 15, 92: 21, 93: 11, 94: 8, 95: 8, 96: 19, 97: 5, 98: 8, 99: 8, 100: 11,
+  101: 11, 102: 8, 103: 3, 104: 9, 105: 5, 106: 4, 107: 7, 108: 3, 109: 6, 110: 3,
+  111: 5, 112: 4, 113: 5, 114: 6
+};
+
 export default function QuranClient() {
   const params = useParams();
   const router = useRouter();
   const { user, userCollection } = useAuth();
+
+  // Use a derived initial ID to prevent Al-Fatiha glitch
+  const initialId = params?.id ? Number(params.id) : null;
+
   const [loadedSurahs, setSurahs] = useState<SurahData[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextSurahId, setNextSurahId] = useState<number | null>(null);
@@ -70,7 +89,7 @@ export default function QuranClient() {
   const [selectedTranslator, setSelectedTranslator] = useState('163');
   const [playingAyahKey, setPlayingAyahKey] = useState<string | null>(null);
   const [isDownloaded, setIsDownloaded] = useState(false);
-  const [surahInput, setSurahInput] = useState("");
+  const [surahInput, setSurahInput] = useState(initialId ? initialId.toString() : "1");
   const [ayahInput, setAyahInput] = useState("");
   const [highlightedAyah, setHighlightedAyah] = useState<string | null>(null);
 
@@ -86,7 +105,7 @@ export default function QuranClient() {
   // Auto-Scroll States
   const [isAutoScrolling, setIsAutoScrolling] = useState(false);
   const [scrollSpeed, setScrollSpeed] = useState(1);
-  const [activeSurahId, setActiveSurahId] = useState<number>(Number(params.id));
+  const [activeSurahId, setActiveSurahId] = useState<number>(initialId || 1);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const observer = useRef<IntersectionObserver | null>(null);
@@ -96,10 +115,30 @@ export default function QuranClient() {
   const lastSavedRef = useRef<{sId: number, aId: number} | null>(null);
   const scrollAccumulatorRef = useRef<number>(0);
 
+  const isDesktop = () => typeof window !== 'undefined' && window.innerWidth >= 1024;
+
   const toBengaliNumber = (num: number) => {
     const digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
     return num.toString().split('').map(d => digits[parseInt(d)]).join('');
   };
+
+  const fromBengaliNumber = (str: string) => {
+    const digits: Record<string, string> = {
+      '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'
+    };
+    return str.toString().split('').map(char => digits[char] || char).join('');
+  };
+
+  // Sync activeSurahId and surahInput with URL params
+  useEffect(() => {
+    if (params?.id) {
+      const id = Number(params.id);
+      if (!isNaN(id)) {
+        setActiveSurahId(id);
+        setSurahInput(id.toString());
+      }
+    }
+  }, [params?.id]);
 
   const checkDownloadStatus = useCallback(async (id: string | number) => {
     if ('caches' in window) {
@@ -195,14 +234,10 @@ export default function QuranClient() {
     const tryScroll = () => {
       const element = document.getElementById(elementId);
       if (element) {
-        // Use a slightly larger offset for desktop due to fixed header
-        const offset = isDesktop ? 150 : 100;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-        window.scrollTo({
-          top: offsetPosition,
-          behavior: 'smooth'
+        // Use scrollIntoView with block: 'center' to bring it to the middle of the screen
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
         });
 
         setHighlightedAyah(`${sId}-${aId}`);
@@ -260,7 +295,19 @@ export default function QuranClient() {
 
   const handleManualSave = async () => {
     const current = currentVisibleAyahRef.current;
-    if (!user || !current) return;
+    if (!user) {
+      alert("সেভ করতে লগইন করুন");
+      return;
+    }
+    if (!current) {
+      alert("আয়াত লোড হওয়া পর্যন্ত অপেক্ষা করুন");
+      return;
+    }
+    if (!userCollection) {
+      console.error("userCollection is missing");
+      return;
+    }
+
     setIsSaving(true);
     try {
       await setDoc(doc(db, userCollection, user.uid), {
@@ -268,13 +315,19 @@ export default function QuranClient() {
           surahId: current.sId,
           ayahNum: current.aId,
           timestamp: serverTimestamp(),
-          surahName: BENGALI_SURAH_NAMES[current.sId]
+          surahName: BENGALI_SURAH_NAMES[current.sId] || "আল কুরআন"
         }
       }, { merge: true });
+
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 3000);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error manual saving:", err);
+      if (err.message?.includes('network')) {
+        alert("নেটওয়ার্ক সমস্যা! ইন্টারনেট কানেকশন চেক করুন।");
+      } else {
+        alert("সেভ করা সম্ভব হয়নি। আবার চেষ্টা করুন।");
+      }
     } finally {
       setIsSaving(false);
     }
@@ -282,17 +335,53 @@ export default function QuranClient() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!surahInput) return;
-    const sNum = parseInt(surahInput);
-    if (isNaN(sNum) || sNum < 1 || sNum > 114) { alert("সঠিক সুরা নম্বর দিন (১-১১৪)"); return; }
-    const aNum = parseInt(ayahInput);
-    if (sNum.toString() === params.id) {
-      if (!isNaN(aNum)) scrollToAyah(sNum, aNum);
-      else window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Support Bengali digits in inputs
+    const sInputClean = fromBengaliNumber(surahInput);
+    const aInputClean = fromBengaliNumber(ayahInput);
+
+    // Default to current active surah if none selected
+    const sId = sInputClean || activeSurahId.toString();
+    const sNum = parseInt(sId);
+
+    if (isNaN(sNum) || sNum < 1 || sNum > 114) {
+      alert("সঠিক সুরা নম্বর দিন (১-১১৪)");
+      return;
+    }
+
+    const aNum = parseInt(aInputClean);
+
+    // Validate Ayah number if provided
+    if (!isNaN(aNum)) {
+      const maxAyahs = SURAH_AYAH_COUNTS[sNum];
+      if (aNum < 1 || aNum > maxAyahs) {
+        alert(`${BENGALI_SURAH_NAMES[sNum]} সূরায় ১ থেকে ${toBengaliNumber(maxAyahs)} পর্যন্ত আয়াত আছে।`);
+        return;
+      }
+    }
+
+    setIsSearchOpen(false);
+
+    // Check if the surah is already loaded in the infinite list
+    const isSurahLoaded = loadedSurahs.some(s => s.number === sNum);
+
+    if (isSurahLoaded) {
+      if (!isNaN(aNum)) {
+        scrollToAyah(sNum, aNum);
+      } else {
+        // Scroll to top of the surah
+        const isDesktop = window.innerWidth >= 1024;
+        const elementId = isDesktop ? `surah-desktop-${sNum}` : `surah-${sNum}`;
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     } else {
+      // Not loaded, need to navigate
+      // We don't clear surahs here to avoid flicker; the useEffect will handle it
       router.push(`/quran/${sNum}${!isNaN(aNum) ? `#ayah-${sNum}-${aNum}` : ""}`);
     }
-    setIsSearchOpen(false);
   };
 
   const loadNextSurah = useCallback(async () => {
@@ -320,12 +409,14 @@ export default function QuranClient() {
       setSurahs(prev => [data, ...prev]);
       setPrevSurahId(data.number > 1 ? data.number - 1 : null);
 
-      // Adjust scroll position after state update
-      requestAnimationFrame(() => {
+      // Adjust scroll position after state update to maintain view
+      setTimeout(() => {
         const newHeight = document.documentElement.scrollHeight;
         const heightDiff = newHeight - currentHeight;
-        window.scrollTo(0, currentScroll + heightDiff);
-      });
+        if (heightDiff > 0) {
+          window.scrollTo(0, currentScroll + heightDiff);
+        }
+      }, 50);
     } catch (err) {
       console.error(err);
     } finally {
@@ -346,8 +437,9 @@ export default function QuranClient() {
     if (loading) return;
     if (prevObserver.current) prevObserver.current.disconnect();
     prevObserver.current = new IntersectionObserver((entries) => {
+      // Proactive loading while scrolling up
       if (entries[0].isIntersecting && prevSurahId && !isFetchingPrev) loadPrevSurah();
-    }, { rootMargin: '800px' });
+    }, { rootMargin: '100px' });
     if (node) prevObserver.current.observe(node);
   }, [loading, prevSurahId, isFetchingPrev, loadPrevSurah]);
 
@@ -368,30 +460,7 @@ export default function QuranClient() {
             // Update Ref ONLY - NO Re-render during scroll
             currentVisibleAyahRef.current = { sId: sIdNum, aId: aIdNum };
             setActiveSurahId(sIdNum);
-
-            // --- AUTO-SAVE PROGRESS ---
-            if (user) {
-              if (autoSaveTimeoutRef.current) clearTimeout(autoSaveTimeoutRef.current);
-              autoSaveTimeoutRef.current = setTimeout(async () => {
-                const current = currentVisibleAyahRef.current;
-                if (current && (!lastSavedRef.current || lastSavedRef.current.sId !== current.sId || lastSavedRef.current.aId !== current.aId)) {
-                  try {
-                    await setDoc(doc(db, userCollection, user.uid), {
-                      lastRead: {
-                        surahId: current.sId,
-                        ayahNum: current.aId,
-                        timestamp: serverTimestamp(),
-                        surahName: BENGALI_SURAH_NAMES[current.sId] || "আল কুরআন"
-                      }
-                    }, { merge: true });
-                    lastSavedRef.current = { ...current };
-                    console.log(`Auto-saved progress: Surah ${current.sId}, Ayah ${current.aId}`);
-                  } catch (err) {
-                    console.error("Auto-save error:", err);
-                  }
-                }
-              }, 4000); // Save after 4 seconds of staying on an ayah
-            }
+            setSurahInput(sIdNum.toString());
           }
         }
       });
@@ -432,24 +501,41 @@ export default function QuranClient() {
   }, [isAutoScrolling, scrollSpeed]);
 
   useEffect(() => {
+    if (!params?.id) return;
+
     let isMounted = true;
+
+    // Reset all infinite scroll states synchronously when ID changes
+    setNextSurahId(null);
+    setPrevSurahId(null);
+    setIsFetchingNext(false);
+    setIsFetchingPrev(false);
+    setSurahs([]);
+    setLoading(true);
+
     const init = async () => {
-      setLoading(true);
-      setSurahs([]);
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
+
+      // Ensure we are at the top for the new Surah
+      if (!window.location.hash) {
+        window.scrollTo(0, 0);
+      }
+
       try {
-        const data = await fetchSurahData(params.id as string, selectedQari, selectedTranslator);
+        const surahId = params.id as string;
+        const data = await fetchSurahData(surahId, selectedQari, selectedTranslator);
         if (isMounted) {
           setSurahs([data]);
           setActiveSurahId(data.number);
+          setSurahInput(data.number.toString());
           setNextSurahId(data.number < 114 ? data.number + 1 : null);
           setPrevSurahId(data.number > 1 ? data.number - 1 : null);
-          checkDownloadStatus(params.id as string);
+          checkDownloadStatus(surahId);
 
-          // Initialize the current visible ayah ref correctly for auto-save
+          // Initialize the current visible ayah ref correctly for save
           currentVisibleAyahRef.current = { sId: data.number, aId: 1 };
           lastSavedRef.current = null;
 
@@ -465,7 +551,11 @@ export default function QuranClient() {
             }
           }
         }
-      } catch (err) { console.error(err); } finally { if (isMounted) setLoading(false); }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
     };
     init();
     return () => { isMounted = false; };
@@ -712,74 +802,91 @@ export default function QuranClient() {
           </div>
         )}
 
-        {/* --- MOBILE VERSION --- */}
-        <div className="lg:hidden w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-[#002b2b] via-[#001a1a] to-[#000d0d] pb-10">
-          {loading ? ( <div className="flex justify-center pt-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div></div> ) : (
-            <div className="w-full px-6 flex flex-col">
-              {loadedSurahs.map((surah) => (
-                <div key={surah.number} className="w-full flex flex-col mb-12">
-                  <div className="text-center mb-8 pt-8">
-                    <h2 className="text-emerald-400 text-3xl font-bold font-bengali">{BENGALI_SURAH_NAMES[surah.number] || surah.name}</h2>
-                    <p className="text-white/30 text-[10px] uppercase tracking-widest leading-none mt-1">{surah.englishName}</p>
-                  </div>
-                  {surah.bismillah && <div className="w-full text-center py-6"><p className="text-emerald-400 text-4xl font-serif">{surah.bismillah}</p></div>}
-                  <div className="space-y-6">
-                    {surah.ayahs.map((ayah) => {
-                      const ayahKey = `${surah.number}-${ayah.number}`;
-                      const isPlaying = playingAyahKey === ayahKey;
-                      return (
-                        <div key={ayahKey} data-surah={surah.number} data-ayah={ayah.number} id={`ayah-${surah.number}-${ayah.number}`} className={`w-full p-6 backdrop-blur-3xl rounded-2xl border flex flex-col space-y-5 shadow-xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/30' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
-                          <div className="flex justify-between items-center">
-                            <span className="text-emerald-500/60 font-bold text-[12px] bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 flex items-center gap-2">
-                              <span className="font-bengali">{BENGALI_SURAH_NAMES[surah.number]}</span>
-                              <span className="opacity-40">|</span>
-                              <span>{toBengaliNumber(surah.number)}:{toBengaliNumber(ayah.number)}</span>
-                              <span className="opacity-40">|</span>
-                              <span className="font-bengali">{surah.revelationType === 'Meccan' ? 'মক্কী' : 'মাদানী'}</span>
-                            </span>
-                            <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-2 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}</button>
-                          </div>
-                          <p style={{ fontSize: `${arabicSize}px` }} className="text-white text-right leading-[1.5] font-serif dir-rtl pr-2">{ayah.text}</p>
-                          <p style={{ fontSize: `${bengaliSize}px` }} className="text-emerald-100/70 font-bengali leading-relaxed border-t border-white/5 pt-4">{ayah.translation}</p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        {/* --- UNIFIED QURAN VIEW (Mobile & Desktop) --- */}
+        <div className="w-full min-h-screen flex flex-col items-center bg-gradient-to-b from-[#002b2b] via-[#001a1a] to-[#000d0d] lg:bg-gradient-to-br lg:from-[#064e3b] lg:via-[#022c22] lg:to-[#011a1a] pb-10 relative">
+          {/* Desktop background pattern */}
+          <div className="hidden lg:block absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
 
-        {/* --- DESKTOP VERSION --- */}
-        <div className="hidden lg:flex w-full flex-col items-center relative bg-gradient-to-br from-[#064e3b] via-[#022c22] to-[#011a1a] min-h-screen">
-          <div className="absolute inset-0 opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
-          <div className="relative z-10 w-full max-w-4xl px-10 flex flex-col items-center pt-10 pb-20">
-            {loading ? ( <div className="animate-pulse text-emerald-400">আয়াত লোড হচ্ছে...</div> ) : (
-              <div className="flex flex-col w-full">
+          <div className="relative z-10 w-full max-w-4xl px-6 lg:px-10 flex flex-col items-center">
+            {loading && loadedSurahs.length === 0 ? (
+              <div className="fixed inset-0 z-[100] bg-[#001a1a] flex flex-col items-center justify-center space-y-4">
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin"></div>
+                  <BookOpen className="absolute inset-0 m-auto text-emerald-500 animate-pulse" size={24} />
+                </div>
+                <div className="flex flex-col items-center">
+                  <p className="text-emerald-500 font-bold font-bengali text-lg">সুরা লোড হচ্ছে...</p>
+                  <p className="text-white/20 text-xs uppercase tracking-[0.2em] mt-1">Please wait a moment</p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-full flex flex-col pt-10">
+                {loading && (
+                  <div className="w-full flex flex-col items-center justify-center py-8 space-y-2 animate-pulse">
+                    <Loader2 className="text-emerald-500 animate-spin" size={20} />
+                    <p className="text-emerald-400 text-xs font-bengali">ডেটা সিঙ্ক করা হচ্ছে...</p>
+                  </div>
+                )}
+
                 {loadedSurahs.map((surah) => (
-                  <div key={surah.number} id={`surah-desktop-${surah.number}`} className="w-full flex flex-col mb-20 border-b border-white/5 pb-20">
-                    <h2 className="text-6xl font-black text-white mb-2 font-bengali text-center">{BENGALI_SURAH_NAMES[surah.number] || surah.name}</h2>
-                    <p className="text-emerald-100/40 text-lg mb-12 text-center">{surah.englishName}</p>
-                    {surah.bismillah && <div className="w-full text-center mb-12"><p className="text-emerald-400 text-6xl font-serif">{surah.bismillah}</p></div>}
-                    <div className="flex flex-col space-y-10">
+                  <div key={surah.number} id={`surah-${surah.number}`} className="w-full flex flex-col mb-12 lg:mb-20 lg:border-b lg:border-white/5 lg:pb-20">
+                    <div className="text-center mb-8 pt-8 lg:mb-12">
+                      <h2 className="text-emerald-400 lg:text-white text-3xl lg:text-6xl font-bold lg:font-black font-bengali">{BENGALI_SURAH_NAMES[surah.number] || surah.name}</h2>
+                      <p className="text-white/30 lg:text-emerald-100/40 text-[10px] lg:text-lg uppercase tracking-widest leading-none mt-1 lg:mt-2">{surah.englishName}</p>
+                    </div>
+
+                    {surah.bismillah && (
+                      <div className="w-full text-center py-6 lg:mb-12">
+                        <p className="text-emerald-400 text-4xl lg:text-6xl font-serif">{surah.bismillah}</p>
+                      </div>
+                    )}
+
+                    <div className="space-y-6 lg:space-y-10">
                       {surah.ayahs.map((ayah) => {
                         const ayahKey = `${surah.number}-${ayah.number}`;
                         const isPlaying = playingAyahKey === ayahKey;
+                        const isHighlighted = highlightedAyah === ayahKey;
+
                         return (
-                          <div key={ayahKey} data-surah={surah.number} data-ayah={ayah.number} id={`ayah-desktop-${surah.number}-${ayah.number}`} className={`w-full p-8 backdrop-blur-3xl border rounded-3xl flex flex-col space-y-6 shadow-2xl transition-all duration-700 ${highlightedAyah === ayahKey ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/40' : isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' : 'bg-white/[0.03] border-white/5'}`}>
+                          <div
+                            key={ayahKey}
+                            data-surah={surah.number}
+                            data-ayah={ayah.number}
+                            id={`ayah-${surah.number}-${ayah.number}`}
+                            className={`w-full p-6 lg:p-8 backdrop-blur-3xl rounded-2xl lg:rounded-3xl border flex flex-col space-y-5 lg:space-y-6 shadow-xl lg:shadow-2xl transition-all duration-700
+                              ${isHighlighted ? 'border-emerald-500 bg-emerald-500/10 scale-[1.02] shadow-emerald-500/30 lg:shadow-emerald-500/40' :
+                                isPlaying ? 'border-emerald-500 bg-emerald-500/10 scale-[1.01] border-emerald-500/20' :
+                                'bg-white/[0.03] border-white/5'}`}
+                          >
                             <div className="flex justify-between items-center">
-                              <div className="flex items-center gap-4">
-                                <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 font-bold">{ayah.number}</div>
-                                <div className="flex flex-col">
+                              {/* Info Badge (Mobile Style) / Icon (Desktop Style) */}
+                              <div className="flex items-center gap-3 lg:gap-4">
+                                <div className="hidden lg:flex w-10 h-10 bg-emerald-500/20 rounded-full items-center justify-center text-emerald-400 font-bold">
+                                  {ayah.number}
+                                </div>
+                                <div className="lg:hidden flex">
+                                  <span className="text-emerald-500/60 font-bold text-[12px] bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20 flex items-center gap-2">
+                                    <span className="font-bengali">{BENGALI_SURAH_NAMES[surah.number]}</span>
+                                    <span className="opacity-40">|</span>
+                                    <span>{toBengaliNumber(surah.number)}:{toBengaliNumber(ayah.number)}</span>
+                                  </span>
+                                </div>
+                                <div className="hidden lg:flex flex-col">
                                   <span className="text-white/60 font-bold text-sm font-bengali">{BENGALI_SURAH_NAMES[surah.number]} ({toBengaliNumber(surah.number)})</span>
                                   <span className="text-emerald-500/40 text-[10px] font-bold uppercase tracking-widest">{surah.revelationType}</span>
                                 </div>
                               </div>
-                              <button onClick={() => playAyahAudio(ayah, surah.number)} className={`p-3 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}>{isPlaying ? <Pause size={20} fill="currentColor"/> : <Play size={20} fill="currentColor"/>}</button>
+
+                              <button
+                                onClick={() => playAyahAudio(ayah, surah.number)}
+                                className={`p-2 lg:p-3 rounded-full transition-all ${isPlaying ? 'bg-emerald-500 text-white' : 'bg-white/10 text-white hover:bg-emerald-500'}`}
+                              >
+                                {isPlaying ? <Pause size={isDesktop() ? 20 : 16} fill="currentColor"/> : <Play size={isDesktop() ? 20 : 16} fill="currentColor"/>}
+                              </button>
                             </div>
-                            <p style={{ fontSize: `${arabicSize}px` }} className="text-white text-right leading-[1.5] font-serif">{ayah.text}</p>
-                            <p style={{ fontSize: `${bengaliSize}px` }} className="text-emerald-100/70 font-bengali leading-relaxed border-t border-white/10 pt-6">{ayah.translation}</p>
+
+                            <p style={{ fontSize: `${arabicSize}px` }} className="text-white text-right leading-[1.5] font-serif dir-rtl pr-2">{ayah.text}</p>
+                            <p style={{ fontSize: `${bengaliSize}px` }} className="text-emerald-100/70 font-bengali leading-relaxed border-t border-white/5 lg:border-white/10 pt-4 lg:pt-6">{ayah.translation}</p>
                           </div>
                         );
                       })}
