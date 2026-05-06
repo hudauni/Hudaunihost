@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ChevronLeft, Send, CheckCircle2, Loader2, Wallet } from 'lucide-react';
+import { ChevronLeft, Send, CheckCircle2, Loader2, Wallet, Copy, Check } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 
 export default function SadakaPage() {
   const { user, userData } = useAuth();
@@ -14,7 +14,42 @@ export default function SadakaPage() {
   const [senderNumber, setSenderNumber] = useState("");
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
+  const [sadakaPageTitle, setSadakaPageTitle] = useState("সাদকা প্রদান");
+  const [sadakaPageBtnText, setSadakaPageBtnText] = useState("সাদকা দিন");
+  const [sadakaSteps, setSadakaSteps] = useState<{ id: string; type: 'text' | 'number'; text?: string; number?: string }[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchData() {
+      try {
+        const settingsSnap = await getDoc(doc(db, "settings", "general"));
+        if (settingsSnap.exists()) {
+          const data = settingsSnap.data();
+          setSadakaPageTitle(data.sadakaPageTitle || "সাদকা প্রদান");
+          setSadakaPageBtnText(data.sadakaPageBtnText || "সাদকা দিন");
+          setSadakaSteps(data.sadakaSteps || []);
+        }
+      } catch (e) {
+        console.error("Error fetching sadaka data:", e);
+      } finally {
+        setDataLoading(false);
+      }
+    }
+    fetchData();
+  }, []);
+
+  const handleCopy = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const toBengaliNumber = (num: number | string) => {
+    const digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+    return num.toString().split('').map(d => digits[parseInt(d)] || d).join('');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,33 +96,41 @@ export default function SadakaPage() {
                 <div className="w-16 h-16 bg-emerald-500/10 rounded-sm flex items-center justify-center text-emerald-400 mb-4 border border-emerald-500/20 shadow-2xl">
                   <Wallet size={32} />
                 </div>
-                <h2 className="text-3xl font-black text-white font-bengali tracking-tight">সাদকা প্রদান</h2>
+                <h2 className="text-3xl font-black text-white font-bengali tracking-tight">{sadakaPageTitle}</h2>
                 <div className="w-12 h-1 bg-emerald-500 mt-2 rounded-full"></div>
               </div>
 
               {!submitted ? (
                 <div className="space-y-8">
                   <div className="space-y-5 text-white/90 font-bengali text-[15px] leading-relaxed">
-                    <div className="flex gap-4 items-start group">
-                      <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">১</span>
-                      <p className="pt-0.5">অ্যাপে লগইন করে <span className="text-emerald-400 font-bold">‘Send Money’</span> অপশনে ক্লিক করুন।</p>
-                    </div>
-                    <div className="flex gap-4 items-start">
-                      <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">২</span>
-                      <p className="pt-0.5">টাকা পাঠাতে <span className="text-emerald-400 font-bold tracking-wider">01977-889080</span> নম্বর লিখুন।</p>
-                    </div>
-                    <div className="flex gap-4 items-start">
-                      <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">৩</span>
-                      <p className="pt-0.5">পরিমাণে আপনার পাঠানোর টাকার অ্যামাউন্ট লিখুন।</p>
-                    </div>
-                    <div className="flex gap-4 items-start">
-                      <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">৪</span>
-                      <p className="pt-0.5">রেফারেন্সে আপনার আইডি (<span className="text-emerald-400 font-bold">{userData?.associateId}</span>) দিন।</p>
-                    </div>
-                    <div className="flex gap-4 items-start border-t border-white/5 pt-4">
-                      <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">৫</span>
-                      <p className="pt-0.5">পেমেন্ট সম্পন্ন হলে নিচের ফর্মটি পূরণ করে পাঠান।</p>
-                    </div>
+                    {sadakaSteps.map((step, index) => (
+                      <div key={step.id || index} className="flex gap-4 items-start group">
+                        <span className="w-6 h-6 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center text-xs font-black shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                          {toBengaliNumber(index + 1)}
+                        </span>
+                        <div className="flex-1">
+                          <div className="pt-0.5 flex flex-wrap items-center gap-x-2">
+                            {step.type === 'text' ? (
+                              <span>{step.text?.replace('{associateId}', userData?.associateId || 'N/A')}</span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+                                <span className="text-emerald-400 font-bold tracking-wider font-sans">{step.number}</span>
+                                <button
+                                  onClick={() => handleCopy(step.number!, `step-${index}`)}
+                                  className="p-1 hover:bg-white/10 rounded transition-all text-emerald-400"
+                                >
+                                  {copiedId === `step-${index}` ? <Check size={12} /> : <Copy size={12} />}
+                                </button>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {sadakaSteps.length === 0 && (
+                      <p className="text-white/20 text-center text-xs">No sadaka steps configured.</p>
+                    )}
                   </div>
 
                   {!showInput ? (
@@ -95,7 +138,7 @@ export default function SadakaPage() {
                       onClick={() => setShowShowInput(true)}
                       className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm font-black font-bengali text-lg transition-all shadow-[0_10px_20px_rgba(5,150,105,0.3)] active:translate-y-1 active:shadow-none border-t border-white/20"
                     >
-                      সাদকা দিন
+                      {sadakaPageBtnText}
                     </button>
                   ) : (
                     <form onSubmit={handleSubmit} className="space-y-5 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -153,31 +196,35 @@ export default function SadakaPage() {
           <div className="relative z-10 w-full max-w-5xl bg-white/[0.03] border-t border-white/20 border-l border-white/10 backdrop-blur-3xl rounded-sm p-16 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] flex gap-16 items-center">
             <div className="flex-1 space-y-10">
               <div className="space-y-2">
-                <h2 className="text-5xl font-black text-white font-bengali italic tracking-tight">সাদকা প্রদানের নিয়মাবলী</h2>
+                <h2 className="text-5xl font-black text-white font-bengali italic tracking-tight">{sadakaPageTitle}</h2>
                 <div className="w-24 h-1.5 bg-emerald-500 rounded-full"></div>
               </div>
 
               <div className="space-y-8 text-white/80 font-bengali text-xl leading-relaxed">
-                <div className="flex gap-5 items-start">
-                  <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black shadow-2xl">১</span>
-                  <p>বিকাশ/নগদ অ্যাপে লগইন করে <span className="text-emerald-400 font-bold underline underline-offset-4">‘Send Money’</span> অপশনে ক্লিক করুন।</p>
-                </div>
-                <div className="flex gap-5 items-start">
-                  <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black shadow-2xl">২</span>
-                  <p>টাকা পাঠাতে <span className="text-emerald-400 font-black tracking-widest bg-white/5 px-2 py-1 rounded">01977-889080</span> এই নম্বরটি লিখুন।</p>
-                </div>
-                <div className="flex gap-5 items-start">
-                  <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black shadow-2xl">৩</span>
-                  <p>পরিমাণে আপনার পাঠানোর কাঙ্ক্ষিত টাকার অ্যামাউন্ট লিখুন।</p>
-                </div>
-                <div className="flex gap-5 items-start">
-                  <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black shadow-2xl">৪</span>
-                  <p>রেফারেন্স হিসেবে আপনার ইউনিক আইডি (<span className="text-emerald-400 font-bold">{userData?.associateId}</span>) ব্যবহার করুন।</p>
-                </div>
-                <div className="flex gap-5 items-start border-t border-white/5 pt-6">
-                  <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black shadow-2xl">৫</span>
-                  <p>পেমেন্ট সম্পন্ন হলে পাশের ফর্মটি পূরণ করে জমা দিন।</p>
-                </div>
+                {sadakaSteps.map((step, index) => (
+                  <div key={step.id || index} className="flex gap-5 items-start">
+                    <span className="w-10 h-10 shrink-0 bg-emerald-500 text-[#001a1a] rounded-sm flex items-center justify-center font-black shadow-2xl">
+                      {toBengaliNumber(index + 1)}
+                    </span>
+                    <div className="flex-1">
+                      <div className="flex flex-wrap items-center gap-x-3">
+                        {step.type === 'text' ? (
+                          <span>{step.text?.replace('{associateId}', userData?.associateId || 'N/A')}</span>
+                        ) : (
+                          <span className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                            <span className="text-emerald-400 font-black tracking-widest font-sans">{step.number}</span>
+                            <button
+                              onClick={() => handleCopy(step.number!, `step-desktop-${index}`)}
+                              className="p-1.5 hover:bg-white/10 rounded transition-all text-emerald-400"
+                            >
+                              {copiedId === `step-desktop-${index}` ? <Check size={16} /> : <Copy size={16} />}
+                            </button>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

@@ -236,7 +236,7 @@ export default function LevelSyllabusClient() {
               <div className="space-y-3">
                 <h3 className="text-2xl font-black text-white font-bengali">টাস্কটি এখনো লক করা!</h3>
                 <p className="text-white/60 font-bengali leading-relaxed text-sm">
-                  দুঃখিত! এই টাস্কটি শুরু করতে হলে আপনাকে প্রথমে <span className="text-emerald-400 font-bold underline underline-offset-4">{prevTaskTitle}</span> টাস্কটির সকল ভিডিও দেখা সম্পন্ন করতে হবে।
+                  স্বাগতম! এই টাস্কটি শুরু করতে হলে আপনাকে প্রথমে <span className="text-emerald-400 font-bold underline underline-offset-4">{prevTaskTitle}</span> টাস্কটির সকল ভিডিও দেখা সম্পন্ন করতে হবে।
                 </p>
               </div>
 

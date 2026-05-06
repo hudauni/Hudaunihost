@@ -10,13 +10,19 @@ import AdminAlert from '@/components/AdminAlert';
 export default function AdminSettings() {
   const [logoUrl, setLogoUrl] = useState("");
   const [enrollVideoId, setEnrollVideoId] = useState("");
+  const [enrollPageTitle, setEnrollPageTitle] = useState("");
+  const [enrollPageBtnText, setEnrollPageBtnText] = useState("");
   const [enrollSteps, setEnrollSteps] = useState<{ id: string; type: 'text' | 'number'; text?: string; number?: string }[]>([]);
+  const [sadakaPageTitle, setSadakaPageTitle] = useState("");
+  const [sadakaPageBtnText, setSadakaPageBtnText] = useState("");
+  const [sadakaSteps, setSadakaSteps] = useState<{ id: string; type: 'text' | 'number'; text?: string; number?: string }[]>([]);
   const [liveClassText, setLiveClassText] = useState("");
   const [liveClassButtonText, setLiveClassButtonText] = useState("");
   const [liveClassLink, setLiveClassLink] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showSadakaAddMenu, setShowSadakaAddMenu] = useState(false);
 
   // Alert state
   const [alertConfig, setAlertConfig] = useState<{
@@ -45,8 +51,12 @@ export default function AdminSettings() {
           const data = docSnap.data();
           setLogoUrl(data.logoUrl || "");
           setEnrollVideoId(data.enrollVideoId || "");
+          setEnrollPageTitle(data.enrollPageTitle || "কোর্স এনরোলমেন্ট");
+          setEnrollPageBtnText(data.enrollPageBtnText || "এনরোল করুন");
+          setSadakaPageTitle(data.sadakaPageTitle || "সাদকা প্রদান");
+          setSadakaPageBtnText(data.sadakaPageBtnText || "সাদকা দিন");
           setLiveClassText(data.liveClassText || "");
-          setLiveClassButtonText(data.liveClassButtonText || "Join Meeting");
+          setLiveClassButtonText(data.liveClassButtonText || "Join Live Class");
           setLiveClassLink(data.liveClassLink || "");
           setEnrollSteps(data.enrollSteps || [
             { id: '1', type: 'text', text: "অ্যাপে লগইন করে ‘Send Money’ অপশনে ক্লিক করুন।" },
@@ -54,6 +64,13 @@ export default function AdminSettings() {
             { id: '3', type: 'text', text: "পরিমাণে কোর্স ফি বা নির্ধারিত টাকা লিখুন।" },
             { id: '4', type: 'text', text: "রেফারেন্সে আপনার আইডি দিন।" },
             { id: '5', type: 'text', text: "পেমেন্ট সম্পন্ন হলে নিচের ফর্মটি পূরণ করে পাঠান।" }
+          ]);
+          setSadakaSteps(data.sadakaSteps || [
+            { id: 's1', type: 'text', text: "অ্যাপে লগইন করে ‘Send Money’ অপশনে ক্লিক করুন।" },
+            { id: 's2', type: 'number', number: "01977-889080" },
+            { id: 's3', type: 'text', text: "পরিমাণে আপনার পাঠানোর টাকার অ্যামাউন্ট লিখুন।" },
+            { id: 's4', type: 'text', text: "রেফারেন্সে আপনার আইডি দিন।" },
+            { id: 's5', type: 'text', text: "পেমেন্ট সম্পন্ন হলে নিচের ফর্মটি পূরণ করে পাঠান।" }
           ]);
         }
       } catch (error) {
@@ -89,6 +106,30 @@ export default function AdminSettings() {
     setEnrollSteps(updated);
   };
 
+  const addSadakaStep = (type: 'text' | 'number') => {
+    const newId = Date.now().toString();
+    const newStep = type === 'text'
+      ? { id: newId, type: 'text' as const, text: "" }
+      : { id: newId, type: 'number' as const, number: "" };
+
+    setSadakaSteps([...sadakaSteps, newStep]);
+    setShowSadakaAddMenu(false);
+  };
+
+  const removeSadakaStep = (index: number) => {
+    showAlert('confirm', 'নিশ্চিত করুন', 'আপনি কি এই ধাপটি মুছে ফেলতে চান?', () => {
+      const updated = [...sadakaSteps];
+      updated.splice(index, 1);
+      setSadakaSteps(updated);
+    });
+  };
+
+  const updateSadakaStep = (index: number, field: string, value: string) => {
+    const updated = [...sadakaSteps];
+    updated[index] = { ...updated[index], [field]: value };
+    setSadakaSteps(updated);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -99,7 +140,12 @@ export default function AdminSettings() {
       await setDoc(doc(db, "settings", "general"), {
         logoUrl: logoUrl,
         enrollVideoId: videoId,
+        enrollPageTitle,
+        enrollPageBtnText,
         enrollSteps: enrollSteps,
+        sadakaPageTitle,
+        sadakaPageBtnText,
+        sadakaSteps,
         liveClassText,
         liveClassButtonText,
         liveClassLink
@@ -117,10 +163,18 @@ export default function AdminSettings() {
 
   const onDragEnd = (result: DropResult) => {
     if (!result.destination) return;
-    const items = Array.from(enrollSteps);
-    const [reorderedItem] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reorderedItem);
-    setEnrollSteps(items);
+
+    if (result.source.droppableId === 'enroll-steps') {
+      const items = Array.from(enrollSteps);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      setEnrollSteps(items);
+    } else if (result.source.droppableId === 'sadaka-steps') {
+      const items = Array.from(sadakaSteps);
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination.index, 0, reorderedItem);
+      setSadakaSteps(items);
+    }
   };
 
   if (loading) {
@@ -218,6 +272,154 @@ export default function AdminSettings() {
                       className="w-full bg-black/40 border border-white/5 rounded-md px-4 py-3 text-white text-xs focus:outline-none focus:border-emerald-500/30"
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sadaka Page Customization */}
+            <div className="space-y-4 pt-6 border-t border-white/5">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Settings size={18} className="text-emerald-500" /> সাদকা পেজ কাস্টমাইজেশন
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-white/20 uppercase font-black tracking-widest ml-1">পেজ টাইটেল (Title)</label>
+                  <input
+                    type="text"
+                    placeholder="সাদকা প্রদান"
+                    value={sadakaPageTitle}
+                    onChange={(e) => setSadakaPageTitle(e.target.value)}
+                    className="w-full bg-black/40 border border-white/5 rounded-md px-4 py-3 text-white text-xs focus:outline-none focus:border-emerald-500/30 font-bengali"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-white/20 uppercase font-black tracking-widest ml-1">বাটন টেক্সট</label>
+                  <input
+                    type="text"
+                    placeholder="সাদকা দিন"
+                    value={sadakaPageBtnText}
+                    onChange={(e) => setSadakaPageBtnText(e.target.value)}
+                    className="w-full bg-black/40 border border-white/5 rounded-md px-4 py-3 text-white text-xs focus:outline-none focus:border-emerald-500/30 font-bengali"
+                  />
+                </div>
+              </div>
+
+              {/* Sadaka Steps */}
+              <div className="space-y-4 pt-4">
+                <div className="flex justify-between items-center relative">
+                  <h4 className="text-sm font-bold text-white/60 flex items-center gap-2">
+                    <List size={16} /> সাদকা স্টেপস
+                  </h4>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowSadakaAddMenu(!showSadakaAddMenu)}
+                      className="flex items-center gap-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 px-3 py-1.5 rounded-md transition-all text-[10px] font-bold border border-emerald-500/20"
+                    >
+                      <Plus size={14} /> স্টেপ যোগ করুন <ChevronDown size={14} />
+                    </button>
+
+                    {showSadakaAddMenu && (
+                      <div className="absolute right-0 mt-1 w-40 bg-[#002b2b] border border-white/10 rounded-lg shadow-2xl z-[100] p-1 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                        <button type="button" onClick={() => addSadakaStep('text')} className="w-full text-left px-3 py-2 hover:bg-white/5 text-white text-[10px] font-bold rounded-md flex items-center gap-2 transition-all">
+                          <List size={12} className="text-emerald-500" /> ১. টেক্সট স্টেপ
+                        </button>
+                        <button type="button" onClick={() => addSadakaStep('number')} className="w-full text-left px-3 py-2 hover:bg-white/5 text-white text-[10px] font-bold rounded-md flex items-center gap-2 transition-all">
+                          <Copy size={12} className="text-emerald-500" /> ২. নম্বর স্টেপ
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <DragDropContext onDragEnd={onDragEnd}>
+                  <Droppable droppableId="sadaka-steps">
+                    {(provided) => (
+                      <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                        {sadakaSteps.map((step, index) => (
+                          <Draggable key={step.id} draggableId={step.id} index={index}>
+                            {(provided) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.draggableProps}
+                                className="bg-white/[0.02] border border-white/5 rounded-md p-3 flex items-center gap-3 group hover:border-white/10 transition-all"
+                              >
+                                <div {...provided.dragHandleProps} className="text-white/10 hover:text-emerald-500 cursor-grab active:cursor-grabbing">
+                                  <GripVertical size={18} />
+                                </div>
+
+                                <div className="w-7 h-7 shrink-0 bg-emerald-500/10 text-emerald-400 rounded-md flex items-center justify-center font-black text-xs border border-emerald-500/10">
+                                  {index + 1}
+                                </div>
+
+                                <div className="flex-1">
+                                  {step.type === 'text' ? (
+                                    <input
+                                      type="text"
+                                      placeholder="ধাপের বর্ণনা লিখুন..."
+                                      value={step.text}
+                                      onChange={(e) => updateSadakaStep(index, 'text', e.target.value)}
+                                      className="w-full bg-black/40 border border-white/5 rounded-md px-3 py-2 text-white text-xs focus:outline-none focus:border-emerald-500/30 font-bengali"
+                                    />
+                                  ) : (
+                                    <div className="flex items-center gap-2 bg-emerald-500/5 border border-emerald-500/20 rounded-md px-3 py-2">
+                                      <Copy size={14} className="text-emerald-500" />
+                                      <input
+                                        type="text"
+                                        placeholder="নম্বর লিখুন"
+                                        value={step.number || ""}
+                                        onChange={(e) => updateSadakaStep(index, 'number', e.target.value)}
+                                        className="flex-1 bg-transparent border-none text-emerald-400 font-bold tracking-widest text-xs focus:outline-none"
+                                      />
+                                    </div>
+                                  )}
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => removeSadakaStep(index)}
+                                  className="p-1.5 text-red-500/20 hover:text-red-500 hover:bg-red-500/10 rounded-md transition-all"
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </div>
+                            )}
+                          </Draggable>
+                        ))}
+                        {provided.placeholder}
+                      </div>
+                    )}
+                  </Droppable>
+                </DragDropContext>
+              </div>
+            </div>
+
+            {/* Enroll Page Customization */}
+            <div className="space-y-4 pt-6 border-t border-white/5">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Settings size={18} className="text-emerald-500" /> এনরোলমেন্ট পেজ কাস্টমাইজেশন
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-white/20 uppercase font-black tracking-widest ml-1">পেজ টাইটেল (Title)</label>
+                  <input
+                    type="text"
+                    placeholder="কোর্স এনরোলমেন্ট"
+                    value={enrollPageTitle}
+                    onChange={(e) => setEnrollPageTitle(e.target.value)}
+                    className="w-full bg-black/40 border border-white/5 rounded-md px-4 py-3 text-white text-xs focus:outline-none focus:border-emerald-500/30 font-bengali"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-white/20 uppercase font-black tracking-widest ml-1">সাবমিট বাটন টেক্সট</label>
+                  <input
+                    type="text"
+                    placeholder="এনরোল করুন"
+                    value={enrollPageBtnText}
+                    onChange={(e) => setEnrollPageBtnText(e.target.value)}
+                    className="w-full bg-black/40 border border-white/5 rounded-md px-4 py-3 text-white text-xs focus:outline-none focus:border-emerald-500/30 font-bengali"
+                  />
                 </div>
               </div>
             </div>

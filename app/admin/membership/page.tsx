@@ -4,9 +4,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import {
   collection, addDoc, getDocs, deleteDoc, doc,
-  query, where, serverTimestamp, updateDoc, setDoc
+  query, where, serverTimestamp, updateDoc, setDoc, writeBatch
 } from 'firebase/firestore';
-import { Plus, Trash2, Edit2, X, Settings2 } from 'lucide-react';
+import { Plus, Trash2, Edit2, X, Settings2, GripVertical, Loader2, Video as VideoIcon } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import AdminAlert from '@/components/AdminAlert';
 
 export default function AdminMembership() {
@@ -19,6 +20,7 @@ export default function AdminMembership() {
 
   const [isLevelModalOpen, setIsLevelModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
   // Alert state
   const [alertConfig, setAlertConfig] = useState<{
@@ -91,6 +93,58 @@ export default function AdminMembership() {
   useEffect(() => { fetchLevels(); }, [fetchLevels]);
   useEffect(() => { fetchTasks(); }, [fetchTasks]);
   useEffect(() => { fetchVideos(); }, [fetchVideos]);
+
+  const onDragEndTasks = async (result: DropResult) => {
+    if (!result.destination || !selectedLevelId) return;
+
+    const items = Array.from(tasks);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setTasks(items);
+    setIsUpdatingOrder(true);
+
+    try {
+      const batch = writeBatch(db);
+      items.forEach((task, index) => {
+        const docRef = doc(db, "membershipTasks", task.id);
+        batch.update(docRef, { order: index + 1 });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error(e);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'টাস্ক পজিশন সেভ করা সম্ভব হয়নি।');
+      fetchTasks();
+    } finally {
+      setIsUpdatingOrder(false);
+    }
+  };
+
+  const onDragEndVideos = async (result: DropResult) => {
+    if (!result.destination || !selectedTaskId) return;
+
+    const items = Array.from(videos);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setVideos(items);
+    setIsUpdatingOrder(true);
+
+    try {
+      const batch = writeBatch(db);
+      items.forEach((video, index) => {
+        const docRef = doc(db, "membershipVideos", video.id);
+        batch.update(docRef, { order: index + 1 });
+      });
+      await batch.commit();
+    } catch (e) {
+      console.error(e);
+      showAlert('error', 'ব্যর্থ হয়েছে', 'ভিডিও পজিশন সেভ করা সম্ভব হয়নি।');
+      fetchVideos();
+    } finally {
+      setIsUpdatingOrder(false);
+    }
+  };
 
   const addLevel = async () => {
     const title = prompt("লেভেলের নাম:");
@@ -171,36 +225,128 @@ export default function AdminMembership() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h3 className="text-xl font-bold text-white font-bengali">সিলেবাস টাস্ক লিস্ট</h3>
-          <button onClick={addTask} className="px-4 py-2 bg-white/5 text-emerald-400 rounded-sm text-xs font-bold border border-white/5">+ নতুন টাস্ক</button>
+          <div className="flex items-center gap-3">
+            {isUpdatingOrder && <Loader2 size={16} className="text-emerald-500 animate-spin" />}
+            <button onClick={addTask} className="px-4 py-2 bg-white/5 text-emerald-400 rounded-sm text-xs font-bold border border-white/5 transition-all hover:bg-emerald-500/10">+ নতুন টাস্ক</button>
+          </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {tasks.map((task) => (
-            <div key={task.id} onClick={() => setSelectedTaskId(task.id)} className={`py-2 px-3 rounded-sm border cursor-pointer transition-all flex justify-between items-center group ${selectedTaskId === task.id ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-white/[0.03] border-white/5'}`}>
-              <span className={`font-bold font-bengali text-sm ${selectedTaskId === task.id ? 'text-emerald-400' : 'text-white/70'}`}>{task.title}</span>
-              <button onClick={(e) => { e.stopPropagation(); deleteItem("membershipTasks", task.id); }} className="p-1 text-red-500/20 hover:text-red-500 opacity-0 group-hover:opacity-100"><Trash2 size={14}/></button>
-            </div>
-          ))}
-        </div>
+
+        <DragDropContext onDragEnd={onDragEndTasks}>
+          <Droppable droppableId="tasks-list">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"
+              >
+                {tasks.map((task, index) => (
+                  <Draggable key={task.id} draggableId={task.id} index={index}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        onClick={() => setSelectedTaskId(task.id)}
+                        className={`py-3 px-4 rounded-sm border cursor-pointer transition-all flex justify-between items-center group ${
+                          snapshot.isDragging ? 'bg-emerald-500/20 border-emerald-500 shadow-2xl z-50' :
+                          selectedTaskId === task.id ? 'bg-emerald-500/10 border-emerald-500/50' : 'bg-white/[0.03] border-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 overflow-hidden">
+                          <div {...provided.dragHandleProps} className="text-white/10 group-hover:text-white/30">
+                            <GripVertical size={16} />
+                          </div>
+                          <span className={`font-bold font-bengali text-sm truncate ${selectedTaskId === task.id ? 'text-emerald-400' : 'text-white/70'}`}>
+                            {index + 1}. {task.title}
+                          </span>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); deleteItem("membershipTasks", task.id); }} className="p-1 text-red-500/20 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all">
+                          <Trash2 size={16}/>
+                        </button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
 
       {selectedTaskId && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-6 border-t border-white/5">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-8 border-t border-white/10">
           <div className="lg:col-span-1">
-            <div className="bg-white/[0.03] border border-white/10 p-6 rounded-md">
+            <div className="bg-white/[0.03] border border-white/10 p-6 rounded-sm sticky top-10">
+              <h4 className="text-white font-bold mb-4 flex items-center gap-2">
+                <VideoIcon size={18} className="text-emerald-500" />
+                নতুন ভিডিও যোগ করুন
+              </h4>
               <form onSubmit={addVideo} className="space-y-4">
-                <input type="text" placeholder="ভিডিও শিরোনাম" value={newVideoTitle} onChange={(e) => setNewVideoTitle(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2 text-white text-sm outline-none font-bengali" />
-                <input type="url" placeholder="ইউটিউব লিংক" value={newVideoUrl} onChange={(e) => setNewVideoUrl(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2 text-white text-sm outline-none" />
-                <button className="w-full bg-emerald-600 py-2 rounded-sm font-bold text-white">সেভ করুন</button>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-white/20 uppercase font-bold tracking-widest ml-1">ভিডিও শিরোনাম</p>
+                  <input type="text" placeholder="ভিডিও শিরোনাম" value={newVideoTitle} onChange={(e) => setNewVideoTitle(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali transition-all" />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] text-white/20 uppercase font-bold tracking-widest ml-1">ইউটিউব লিংক</p>
+                  <input type="url" placeholder="ইউটিউব লিংক" value={newVideoUrl} onChange={(e) => setNewVideoUrl(e.target.value)} required className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 transition-all" />
+                </div>
+                <button className="w-full bg-emerald-600 py-3 rounded-sm font-bold text-white transition-all hover:bg-emerald-500 shadow-lg shadow-emerald-500/10">সেভ করুন</button>
               </form>
             </div>
           </div>
-          <div className="lg:col-span-2 space-y-3">
-            {videos.map((v, i) => (
-              <div key={v.id} className="bg-white/[0.02] p-3 rounded-sm flex items-center justify-between border border-white/5">
-                <span className="text-white text-sm font-bengali">{i+1}. {v.title}</span>
-                <button onClick={() => deleteItem("membershipVideos", v.id)} className="text-red-500/40 hover:text-red-500"><Trash2 size={16}/></button>
+
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h4 className="text-xs font-bold text-white/40 uppercase tracking-widest">প্লেলিস্ট ভিডিওসমূহ</h4>
+              <p className="text-[10px] text-white/20 italic">Drag to reorder playlist</p>
+            </div>
+
+            <DragDropContext onDragEnd={onDragEndVideos}>
+              <Droppable droppableId="videos-list">
+                {(provided) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    className="space-y-2.5"
+                  >
+                    {videos.map((v, i) => (
+                      <Draggable key={v.id} draggableId={v.id} index={i}>
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            className={`bg-white/[0.02] p-4 rounded-sm flex items-center justify-between border transition-all group ${
+                              snapshot.isDragging ? 'bg-emerald-500/10 border-emerald-500 shadow-2xl z-50' : 'border-white/5 hover:border-white/10'
+                            }`}
+                          >
+                            <div className="flex items-center gap-4 flex-1">
+                              <div {...provided.dragHandleProps} className="text-white/10 group-hover:text-white/30">
+                                <GripVertical size={18} />
+                              </div>
+                              <span className="text-white text-sm font-bengali flex-1">
+                                <span className="text-white/20 mr-2 font-mono">{i + 1}.</span>
+                                {v.title}
+                              </span>
+                            </div>
+                            <button onClick={() => deleteItem("membershipVideos", v.id)} className="p-2 text-red-500/20 hover:text-red-500 transition-colors">
+                              <Trash2 size={18}/>
+                            </button>
+                          </div>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
+
+            {videos.length === 0 && (
+              <div className="py-20 border-2 border-dashed border-white/5 rounded-sm flex flex-col items-center justify-center text-white/10">
+                <VideoIcon size={40} className="mb-2 opacity-10" />
+                <p className="font-bengali">কোনো ভিডিও যোগ করা হয়নি</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )}

@@ -27,6 +27,10 @@ export default function GoalsPage() {
           id: doc.id,
           ...doc.data()
         })) as GoalVideo[];
+
+        // Sort by order if available
+        data.sort((a: any, b: any) => (a.order ?? 0) - (b.order ?? 0));
+
         setVideos(data);
       } catch (error) {
         console.error("Error fetching videos:", error);

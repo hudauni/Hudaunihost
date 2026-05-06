@@ -9,6 +9,52 @@ import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp, doc, getDoc } from 'firebase/firestore';
 
+const VideoCard = ({ enrollVideoId }: { enrollVideoId: string | null }) => {
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  if (!enrollVideoId) return null;
+  return (
+    <div className="w-full mb-8">
+      <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black">
+        {isPlaying ? (
+          <div className="relative w-full h-full">
+            <iframe
+              src={`https://www.youtube.com/embed/${enrollVideoId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
+              title="How to enroll"
+              frameBorder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              className="w-full h-full"
+            ></iframe>
+
+            {/* --- RESPONSIVE OVERLAYS --- */}
+            <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+            <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+            <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+            <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
+          </div>
+        ) : (
+          <div onClick={() => setIsPlaying(true)} className="relative w-full h-full group cursor-pointer">
+            <img
+              src={`https://img.youtube.com/vi/${enrollVideoId}/hqdefault.jpg`}
+              alt="Tutorial Thumbnail"
+              className="w-full h-full object-cover opacity-60"
+            />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                <Play size={24} className="text-white fill-white ml-1" />
+              </div>
+            </div>
+            <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent text-center text-white">
+              <h4 className="text-xs font-bold font-bengali">কিভাবে এনরোল করবেন? ভিডিওটি দেখুন</h4>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 function EnrollContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -23,8 +69,9 @@ function EnrollContent() {
   const [dataLoading, setDataLoading] = useState(true);
   const [submitted, setSubmitted] = useState(false);
   const [enrollVideoId, setEnrollVideoId] = useState<string | null>(null);
+  const [enrollPageTitle, setEnrollPageTitle] = useState("কোর্স এনরোলমেন্ট");
+  const [enrollPageBtnText, setEnrollPageBtnText] = useState("এনরোল করুন");
   const [enrollSteps, setEnrollSteps] = useState<{ id: string; type: 'text' | 'number'; text?: string; number?: string }[]>([]);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -34,6 +81,8 @@ function EnrollContent() {
         if (settingsSnap.exists()) {
           const data = settingsSnap.data();
           setEnrollVideoId(data.enrollVideoId || null);
+          setEnrollPageTitle(data.enrollPageTitle || "কোর্স এনরোলমেন্ট");
+          setEnrollPageBtnText(data.enrollPageBtnText || "এনরোল করুন");
           setEnrollSteps(data.enrollSteps || []);
         }
       } catch (e) {
@@ -92,50 +141,6 @@ function EnrollContent() {
     }
   };
 
-  const VideoCard = () => {
-    if (!enrollVideoId) return null;
-    return (
-      <div className="w-full mb-8">
-        <div className="relative aspect-video w-full rounded-xl overflow-hidden border border-white/10 shadow-xl bg-black">
-          {isPlaying ? (
-            <div className="relative w-full h-full">
-              <iframe
-                src={`https://www.youtube.com/embed/${enrollVideoId}?autoplay=1&modestbranding=1&rel=0&enablejsapi=1&playsinline=1`}
-                title="How to enroll"
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full"
-              ></iframe>
-
-              {/* --- RESPONSIVE OVERLAYS --- */}
-              <div className="absolute top-0 left-0 right-0 h-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-              <div className="absolute bottom-0 left-0 right-0 h-[20%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-              <div className="absolute top-0 bottom-0 right-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-              <div className="absolute top-0 bottom-0 left-0 w-[30%] z-10 bg-transparent pointer-events-auto cursor-default"></div>
-            </div>
-          ) : (
-            <div onClick={() => setIsPlaying(true)} className="relative w-full h-full group cursor-pointer">
-              <img
-                src={`https://img.youtube.com/vi/${enrollVideoId}/hqdefault.jpg`}
-                alt="Tutorial Thumbnail"
-                className="w-full h-full object-cover opacity-60"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-12 h-12 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Play size={24} className="text-white fill-white ml-1" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/80 to-transparent text-center text-white">
-                <h4 className="text-xs font-bold font-bengali">কিভাবে এনরোল করবেন? ভিডিওটি দেখুন</h4>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   if (dataLoading) {
     return <div className="flex items-center justify-center min-h-screen text-emerald-500"><Loader2 className="animate-spin" size={40} /></div>;
   }
@@ -156,11 +161,11 @@ function EnrollContent() {
               <div className="w-16 h-16 bg-emerald-500/10 rounded-sm flex items-center justify-center text-emerald-400 mb-4 border border-emerald-500/20">
                 <BookOpen size={32} />
               </div>
-              <h2 className="text-2xl font-black text-white font-bengali tracking-tight">কোর্স এনরোলমেন্ট</h2>
+              <h2 className="text-2xl font-black text-white font-bengali tracking-tight">{enrollPageTitle}</h2>
               <p className="text-emerald-400 font-bold text-sm mt-1 font-bengali">{courseTitle}</p>
             </div>
 
-            {!submitted && <VideoCard />}
+            {!submitted && <VideoCard enrollVideoId={enrollVideoId} />}
 
             {!submitted ? (
               <div className="space-y-8">
@@ -223,7 +228,7 @@ function EnrollContent() {
                     className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm font-black uppercase tracking-[0.2em] transition-all active:scale-95 flex items-center justify-center gap-3 shadow-2xl"
                   >
                     {loading ? <Loader2 className="animate-spin" size={22} /> : <Send size={22} />}
-                    এনরোল করুন
+                    {enrollPageBtnText}
                   </button>
                 </form>
               </div>
@@ -249,12 +254,12 @@ function EnrollContent() {
         <div className="relative z-10 w-full max-w-5xl bg-white/[0.03] border border-white/10 backdrop-blur-3xl rounded-sm p-16 shadow-[0_50px_100px_-20px_rgba(0,0,0,0.7)] flex gap-16 items-center">
           <div className="flex-1 space-y-10">
             <div className="space-y-2">
-              <h2 className="text-5xl font-black text-white font-bengali italic tracking-tight">এনরোলমেন্ট গাইডলাইন</h2>
+              <h2 className="text-5xl font-black text-white font-bengali italic tracking-tight">{enrollPageTitle}</h2>
               <p className="text-emerald-400 font-bold text-xl font-bengali">কোর্স: {courseTitle}</p>
               <div className="w-24 h-1.5 bg-emerald-500 rounded-full mt-4"></div>
             </div>
 
-            {!submitted && <VideoCard />}
+            {!submitted && <VideoCard enrollVideoId={enrollVideoId} />}
 
             <div className="space-y-8 text-white/80 font-bengali text-xl leading-relaxed">
                {enrollSteps.map((step, index) => (
@@ -320,7 +325,7 @@ function EnrollContent() {
                     className="w-full py-5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-sm font-black uppercase tracking-[0.2em] transition-all active:translate-y-1 active:shadow-none flex items-center justify-center gap-3 shadow-xl"
                   >
                     {loading ? <Loader2 className="animate-spin" size={24} /> : <Send size={24} />}
-                    SUBMIT
+                    {enrollPageBtnText}
                   </button>
                 </form>
               </div>

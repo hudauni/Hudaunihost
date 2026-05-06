@@ -298,10 +298,10 @@ export default function HomePage() {
                         </button>
 
                         <Link
-                          href={`/enroll/?course=${encodeURIComponent(video.title)}`}
+                          href={video.enrollBtnUrl || `/enroll/?course=${encodeURIComponent(video.title)}`}
                           className="flex-[2] py-3 bg-white text-black rounded-lg font-black text-[10px] uppercase tracking-wider flex items-center justify-center gap-2 shadow-xl active:scale-95 transition-all"
                         >
-                          <Zap size={14} fill="currentColor" /> Enroll Now
+                          <Zap size={14} fill="currentColor" /> {video.enrollBtnText || "Enroll Now"}
                         </Link>
                       </div>
                     </div>
@@ -398,10 +398,10 @@ export default function HomePage() {
                       </button>
 
                       <Link
-                        href={`/enroll/?course=${encodeURIComponent(video.title)}`}
+                        href={video.enrollBtnUrl || `/enroll/?course=${encodeURIComponent(video.title)}`}
                         className="flex-[2] py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl transition-all"
                       >
-                        <Zap size={18} fill="currentColor" /> Enroll Now
+                        <Zap size={18} fill="currentColor" /> {video.enrollBtnText || "Enroll Now"}
                       </Link>
                     </div>
                   </div>

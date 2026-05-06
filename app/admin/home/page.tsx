@@ -50,10 +50,14 @@ export default function AdminHomeManagement() {
   const [newVTitle, setNewVTitle] = useState("");
   const [newVUrl, setNewVUrl] = useState("");
   const [newVDetails, setNewVDetails] = useState("");
+  const [newVBtnText, setNewVBtnText] = useState("Enroll Now");
+  const [newVBtnUrl, setNewVBtnUrl] = useState("");
   const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
   const [editVTitle, setEditVTitle] = useState("");
   const [editVUrl, setEditVUrl] = useState("");
   const [editVDetails, setEditVDetails] = useState("");
+  const [editVBtnText, setEditVBtnText] = useState("");
+  const [editVBtnUrl, setEditVBtnUrl] = useState("");
 
   const fetchMenu = useCallback(async () => {
     try {
@@ -133,6 +137,8 @@ export default function AdminHomeManagement() {
         title: editVTitle,
         youtubeId: videoId,
         details: editVDetails,
+        enrollBtnText: editVBtnText,
+        enrollBtnUrl: editVBtnUrl,
       });
       setEditingVideoId(null);
       fetchVideos();
@@ -181,9 +187,12 @@ export default function AdminHomeManagement() {
         title: newVTitle,
         youtubeId: videoId,
         details: newVDetails,
+        enrollBtnText: newVBtnText,
+        enrollBtnUrl: newVBtnUrl,
         createdAt: serverTimestamp()
       });
       setNewVTitle(""); setNewVUrl(""); setNewVDetails("");
+      setNewVBtnText("Enroll Now"); setNewVBtnUrl("");
       fetchVideos();
       showAlert('success', 'সফল হয়েছে', 'ভিডিওটি সফলভাবে যোগ করা হয়েছে।');
     } catch (error) {
@@ -386,6 +395,18 @@ export default function AdminHomeManagement() {
                   rows={4}
                   className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm outline-none focus:border-emerald-500/50 font-bengali resize-none"
                 ></textarea>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-white/20 uppercase font-bold tracking-widest ml-1">বাটন টেক্সট</p>
+                    <input type="text" placeholder="Enroll Now" value={newVBtnText} onChange={(e) => setNewVBtnText(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2 text-white text-xs outline-none focus:border-emerald-500/50 font-bengali" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-white/20 uppercase font-bold tracking-widest ml-1">বাটন লিংক (URL)</p>
+                    <input type="text" placeholder="/enroll/ বা https://..." value={newVBtnUrl} onChange={(e) => setNewVBtnUrl(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-sm px-4 py-2 text-white text-xs outline-none focus:border-emerald-500/50" />
+                  </div>
+                </div>
+
                 <button disabled={submitting} className="w-full bg-emerald-600 py-3.5 rounded-sm font-bold text-white transition-all hover:bg-emerald-500 disabled:opacity-50">
                   {submitting ? "সেভ হচ্ছে..." : "ভিডিও যোগ করুন"}
                 </button>
@@ -418,6 +439,22 @@ export default function AdminHomeManagement() {
                       placeholder="বিস্তারিত বিবরণ"
                       rows={3}
                     ></textarea>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input
+                        type="text"
+                        value={editVBtnText}
+                        onChange={(e) => setEditVBtnText(e.target.value)}
+                        className="w-full bg-black/40 border border-emerald-500 rounded-sm px-3 py-1.5 text-white text-[10px] font-bengali"
+                        placeholder="বাটন টেক্সট"
+                      />
+                      <input
+                        type="text"
+                        value={editVBtnUrl}
+                        onChange={(e) => setEditVBtnUrl(e.target.value)}
+                        className="w-full bg-black/40 border border-emerald-500 rounded-sm px-3 py-1.5 text-white text-[10px]"
+                        placeholder="বাটন লিংক"
+                      />
+                    </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => handleUpdateVideo(video.id)}
@@ -446,6 +483,8 @@ export default function AdminHomeManagement() {
                             setEditVTitle(video.title);
                             setEditVUrl(video.youtubeId);
                             setEditVDetails(video.details || "");
+                            setEditVBtnText(video.enrollBtnText || "Enroll Now");
+                            setEditVBtnUrl(video.enrollBtnUrl || "");
                           }}
                           className="p-1.5 text-white/20 hover:text-white transition-colors"
                         >

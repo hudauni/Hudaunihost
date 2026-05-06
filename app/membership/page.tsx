@@ -203,7 +203,7 @@ export default function MembershipPage() {
                 <div className="space-y-3">
                   <h3 className="text-2xl font-black text-white font-bengali">লেভেলটি এখনো লক করা!</h3>
                   <p className="text-white/60 font-bengali leading-relaxed text-sm">
-                    দুঃখিত! এই লেভেলটিতে প্রবেশ করতে হলে আপনাকে প্রথমে <span className="text-emerald-400 font-bold underline underline-offset-4">{prevLevelTitle}</span> লেভেলের সকল টাস্ক ও ভিডিও সম্পন্ন করতে হবে।
+                    স্বাগতম! এই লেভেলটিতে প্রবেশ করতে হলে আপনাকে প্রথমে <span className="text-emerald-400 font-bold underline underline-offset-4">{prevLevelTitle}</span> লেভেলের সকল টাস্ক ও ভিডিও সম্পন্ন করতে হবে।
                   </p>
                 </div>
 
