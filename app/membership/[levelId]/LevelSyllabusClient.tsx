@@ -126,9 +126,6 @@ export default function LevelSyllabusClient() {
             </Link>
           </div>
 
-          <h2 className="text-[#8b5cf6] text-lg font-bold mb-6 drop-shadow-sm font-bengali text-center px-10 -mt-[70px] relative z-10">
-            {levelData?.title || levelId} থেকে মেম্বার হওয়ার সিলেবাস
-          </h2>
 
           <div className="flex-1 w-full overflow-y-auto custom-scrollbar px-6 flex flex-col items-center space-y-3.5 mt-8">
             {tasks.map((task, index) => {
@@ -167,7 +164,7 @@ export default function LevelSyllabusClient() {
         {/* --- DESKTOP VERSION --- */}
         <div className="hidden lg:flex w-full min-h-[calc(100vh-73px)] relative bg-gradient-to-br from-[#064e3b] via-[#022c22] to-[#011a1a] pt-20 pb-20 overflow-y-auto custom-scrollbar">
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
-               style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
+            style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
 
           <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center px-10">
             <Link href="/membership" className="self-start text-emerald-400 hover:text-emerald-300 flex items-center space-x-2 mb-10 transition-all">

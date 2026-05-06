@@ -135,11 +135,12 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
 
       const nextIdx = (currentIdx + 1) % prayerSequence.length;
       let nextTime = prayerSequence[nextIdx].time;
-      let startTime = prayerSequence[currentIdx === -1 ? 5 : currentIdx].time;
+      let startTime = prayerSequence[currentIdx === -1 ? prayerSequence.length - 1 : currentIdx].time;
 
-      if (currentSeconds > prayerSequence[5].time || currentIdx === -1) {
-        if (currentIdx === 5) nextTime += 24 * 3600;
-        else startTime -= 24 * 3600;
+      if (currentIdx === prayerSequence.length - 1) {
+        nextTime += 24 * 3600;
+      } else if (currentIdx === -1) {
+        startTime -= 24 * 3600;
       }
 
       const diff = Math.abs(nextTime - currentSeconds);

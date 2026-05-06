@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Hind_Siliguri } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
+import CapacitorAppListener from "@/components/CapacitorAppListener";
 
 const inter = Inter({ subsets: ["latin"] });
 const hindSiliguri = Hind_Siliguri({
@@ -44,6 +45,7 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <AuthProvider>
+          <CapacitorAppListener />
           {children}
         </AuthProvider>
       </body>
