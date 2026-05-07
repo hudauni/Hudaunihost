@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ChevronLeft, Play, X, Info, CreditCard, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import YouTubePlayer from '@/components/YouTubePlayer';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
@@ -79,7 +80,10 @@ export default function CoursesPage() {
               courses.map((course) => (
                 <div key={course.id} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col">
                   {/* YouTube Card with Overlay */}
-                  <div className="aspect-video relative overflow-hidden group">
+                  <div 
+                    className="aspect-video relative overflow-hidden group cursor-pointer"
+                    onClick={() => openDetails(course)}
+                  >
                     <img
                       src={`https://img.youtube.com/vi/${course.youtubeId}/mqdefault.jpg`}
                       alt={course.title}
@@ -128,7 +132,7 @@ export default function CoursesPage() {
         {/* --- DESKTOP VERSION --- */}
         <div className="hidden lg:flex w-full relative bg-gradient-to-br from-[#064e3b] via-[#022c22] to-[#011a1a] min-h-screen pt-[73px]">
           <div className="absolute inset-0 opacity-[0.05] pointer-events-none"
-               style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
+            style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, #10b981 1px, transparent 0)', backgroundSize: '30px 30px' }}></div>
 
           <div className="relative z-10 w-full max-w-7xl mx-auto flex flex-col px-10 py-16">
             <div className="flex justify-between items-end mb-16">
@@ -150,7 +154,10 @@ export default function CoursesPage() {
               ) : courses.length > 0 ? (
                 courses.map((course) => (
                   <div key={course.id} className="bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[2rem] overflow-hidden flex flex-col group hover:border-emerald-500/30 transition-all duration-500 transform hover:-translate-y-2 shadow-2xl">
-                    <div className="aspect-video relative overflow-hidden">
+                    <div 
+                      className="aspect-video relative overflow-hidden cursor-pointer"
+                      onClick={() => openDetails(course)}
+                    >
                       <img
                         src={`https://img.youtube.com/vi/${course.youtubeId}/maxresdefault.jpg`}
                         alt={course.title}
@@ -216,16 +223,7 @@ export default function CoursesPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar">
               <div className="w-full max-w-4xl mx-auto px-6 py-10 flex flex-col">
                 <div className="aspect-video w-full rounded-3xl overflow-hidden bg-black mb-10 shadow-2xl relative border border-white/10">
-                   <iframe
-                    src={`https://www.youtube.com/embed/${selectedCourse.youtubeId}?modestbranding=1&rel=0`}
-                    title={selectedCourse.title}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                    allowFullScreen
-                    className="w-full h-full"
-                  ></iframe>
-                  {/* Security Overlay */}
-                  <div className="absolute inset-0 z-[105] bg-transparent pointer-events-auto"></div>
+                  <YouTubePlayer videoId={selectedCourse.youtubeId} autoplay={true} />
                 </div>
 
                 <div className="flex flex-col space-y-8">
