@@ -213,7 +213,7 @@ export default function PrayerTimeCircle({ size = 200 }: { size?: number }) {
           <div className="text-white font-bold leading-none flex items-center justify-center" style={{ fontSize: size * 0.10 }}>
             {timeLeft ? (
               <>
-                <span className="w-[1.1em] text-center">{toBengaliNumber((timeLeft.h % 12 || 12).toString().padStart(2, '0'))}</span>
+                <span className="w-[1.1em] text-center">{toBengaliNumber(timeLeft.h.toString().padStart(2, '0'))}</span>
                 <span className="mx-1 opacity-70 font-black">:</span>
                 <span className="w-[1.1em] text-center">{toBengaliNumber(timeLeft.m.toString().padStart(2, '0'))}</span>
                 <span className="mx-1 opacity-70 font-black">:</span>
