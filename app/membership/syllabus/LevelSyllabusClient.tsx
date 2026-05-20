@@ -6,13 +6,13 @@ import { ChevronLeft, Lock, CheckCircle2, Play, Loader2, X } from 'lucide-react'
 import Navbar from '@/components/Navbar';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LevelSyllabusClient() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
-  const levelId = params.levelId as string;
+  const levelId = searchParams.get('levelId') as string;
   const { user, loading: authLoading } = useAuth();
 
   const [levelData, setLevelData] = useState<any>(null);
@@ -94,7 +94,7 @@ export default function LevelSyllabusClient() {
     if (levelId === 'associate' && task.title === "নিয়মিত সদকা করা") {
       router.push('/sadaka');
     } else {
-      router.push(`/membership/${levelId}/${task.id}`);
+      router.push(`/membership/syllabus/task/?levelId=${levelId}&taskId=${task.id}`);
     }
   };
 
@@ -150,7 +150,7 @@ export default function LevelSyllabusClient() {
                     {completed ? (
                       <CheckCircle2 size={18} className="text-emerald-400 drop-shadow-[0_0_8px_rgba(52,211,153,0.5)]" />
                     ) : !unlocked ? (
-                      <Lock size={16} className="text-red-500/80 drop-shadow-[0_0_5px_rgba(239,68,68,0.3)]" />
+                      <Lock size={16} className="text-red-500/80" />
                     ) : !isSpecialTask ? (
                       <Play size={16} className="text-emerald-400/80 group-hover:text-emerald-400 transition-colors" />
                     ) : null}

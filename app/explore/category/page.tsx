@@ -1,4 +1,4 @@
-import ExploreClient from '../[id]/ExploreClient';
+import ExploreClient from '../ExploreClient';
 import { Suspense } from 'react';
 
 export default function Page() {

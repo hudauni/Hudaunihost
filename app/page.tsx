@@ -334,7 +334,7 @@ export default function HomePage() {
                     Huda <span className="text-emerald-400">Uni</span>
                   </h1>
                 )}
-                <p className="text-emerald-100/40 text-xl tracking-[0.4em] uppercase font-light">International Islamic University System</p>
+                <p className="text-emerald-100/40 text-xl tracking-[0.4em] uppercase font-light">International Islamic Uni System</p>
                 <div className="flex items-center space-x-8">
                   <div className="inline-flex flex-col px-6 py-3 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-md text-center text-white">
                     <p className="text-white/60 text-sm font-medium font-bengali mb-1">স্বাগতম, {userData?.displayName}</p>

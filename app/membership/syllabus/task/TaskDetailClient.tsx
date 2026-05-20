@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Lock, Play, CheckCircle2, Loader2 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
@@ -19,12 +19,12 @@ import {
 import { useAuth } from '@/context/AuthContext';
 
 export default function TaskDetailClient() {
-  const params = useParams();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
 
-  const levelId = params.levelId as string;
-  const taskId = params.taskId as string;
+  const levelId = searchParams.get('levelId') as string;
+  const taskId = searchParams.get('taskId') as string;
 
   const [taskData, setTaskData] = useState<any>(null);
   const [videos, setVideos] = useState<any[]>([]);
@@ -165,7 +165,7 @@ export default function TaskDetailClient() {
 
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-8 lg:pt-[100px]">
         <div className="flex items-center space-x-4 mb-8">
-          <Link href={`/membership/${levelId}`} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all shadow-lg">
+          <Link href={`/membership/syllabus/?levelId=${levelId}`} className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white transition-all shadow-lg">
             <ChevronLeft size={24} />
           </Link>
           <div>

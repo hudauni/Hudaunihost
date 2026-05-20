@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
-import { useParams, useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Navbar from '@/components/Navbar';
 import YouTubePlayer from '@/components/YouTubePlayer';
 import { Play, List, ChevronLeft, Loader2, Lock, CheckCircle2 } from 'lucide-react';
@@ -22,7 +22,8 @@ interface Course {
 
 export default function CoursePlayerClient() {
   const { user, loading: authLoading } = useAuth();
-  const { courseId } = useParams();
+  const searchParams = useSearchParams();
+  const courseId = searchParams.get('courseId') as string;
   const router = useRouter();
 
   const [course, setCourse] = useState<Course | null>(null);
@@ -60,7 +61,7 @@ export default function CoursePlayerClient() {
       setHasAccess(true);
 
       // 2. Fetch course data
-      const courseDoc = await getDoc(doc(db, "paidCourses", courseId as string));
+      const courseDoc = await getDoc(doc(db, "paidCourses", courseId));
       if (courseDoc.exists()) {
         setCourse({ id: courseDoc.id, ...courseDoc.data() } as Course);
       }

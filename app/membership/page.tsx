@@ -82,7 +82,11 @@ export default function MembershipPage() {
   const handleLevelClick = (level: any, index: number) => {
     const { unlocked } = getLevelStatus(level.id, index);
     if (unlocked) {
-      router.push(`/membership/${level.id}`);
+      if (level.id === 'associate') {
+        router.push(`/membership/associate`);
+      } else {
+        router.push(`/membership/syllabus/?levelId=${level.id}`);
+      }
     } else {
       setPrevLevelTitle(levels[index - 1]?.title || "পূর্ববর্তী লেভেল");
       setShowLockedModal(true);

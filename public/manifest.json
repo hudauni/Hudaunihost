@@ -1,7 +1,7 @@
 {
   "name": "Huda Uni",
   "short_name": "HudaUni",
-  "description": "Islamic University Platform",
+  "description": "Islamic Uni Platform",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#001a1a",

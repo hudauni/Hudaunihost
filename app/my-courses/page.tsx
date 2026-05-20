@@ -101,7 +101,7 @@ export default function MyCoursesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
             {courses.map((course) => (
-              <Link key={course.id} href={`/my-courses/${course.id}`}>
+              <Link key={course.id} href={`/my-courses/player/?courseId=${course.id}`}>
                 <div className="group relative bg-gradient-to-br from-white/[0.05] to-transparent border border-white/10 rounded-xl p-5 hover:bg-emerald-500/[0.08] hover:border-emerald-500/30 transition-all duration-500 overflow-hidden shadow-xl">
                   {/* Smaller Background Icon */}
                   <div className="absolute top-0 right-0 p-4 text-emerald-500/5 group-hover:text-emerald-500/10 transition-colors">

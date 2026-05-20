@@ -1,4 +1,4 @@
-import AdminExploreClient from '../[id]/AdminExploreClient';
+import AdminExploreClient from '../AdminExploreClient';
 import { Suspense } from 'react';
 
 export default function Page() {

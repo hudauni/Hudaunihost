@@ -19,7 +19,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Huda Uni - Islamic University Platform",
+  title: "Huda Uni - Islamic Uni Platform",
   description: "A professional platform for Islamic education and services",
   manifest: "/manifest.json",
   icons: {
